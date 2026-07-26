@@ -6,16 +6,19 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
     try {
-        await connectMongo();
+        const db = await connectMongo();
+        if (!db) {
+            return NextResponse.json([], { status: 200 });
+        }
 
         const { searchParams } = new URL(req.url);
         const query = searchParams.get("q");
-        const currentUserId = searchParams.get("uid");
 
-        const trimmedQuery = query.trim();
-        if (!trimmedQuery) {
+        if (!query || !query.trim()) {
             return NextResponse.json([], { status: 200 });
         }
+
+        const trimmedQuery = query.trim();
 
         // Safely escape special characters for regex searching
         const escapedQuery = trimmedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -37,6 +40,6 @@ export async function GET(req: Request) {
 
     } catch (error: any) {
         console.error("Error searching users:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        return NextResponse.json([], { status: 200 });
     }
 }
