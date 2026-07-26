@@ -5,19 +5,27 @@ import Notification from "@/models/Notification";
 import Group from "@/models/Group";
 import User from "@/models/User";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
     try {
         await connectMongo();
-        const { senderId, receiverId, groupId, content } = await req.json();
+        const { senderId, receiverId, groupId, content, mediaUrl, mediaType } = await req.json();
 
-        if (!senderId || (!receiverId && !groupId) || !content) {
+        if (!senderId || (!receiverId && !groupId)) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        }
+        
+        // Ensure content is a string, even if empty (when only media is sent)
+        const finalContent = content || (mediaUrl ? '' : undefined);
+        if (finalContent === undefined) {
+             return NextResponse.json({ error: "Message must have content or media" }, { status: 400 });
         }
 
         // Check for blocks if it's a direct message
         if (receiverId) {
-            const sender = await User.findOne({ firebaseUid: senderId });
-            const receiver = await User.findOne({ firebaseUid: receiverId });
+            const sender = await User.findOne({ firebaseUid: senderId }).select('blockedUsers').lean();
+            const receiver = await User.findOne({ firebaseUid: receiverId }).select('blockedUsers').lean();
 
             if (sender && sender.blockedUsers && sender.blockedUsers.includes(receiverId)) {
                 return NextResponse.json({ error: "You have blocked this user" }, { status: 403 });
@@ -28,11 +36,11 @@ export async function POST(req: Request) {
             }
         }
 
-        const newMessage = await Message.create({ senderId, receiverId, groupId, content });
+        const newMessage = await Message.create({ senderId, receiverId, groupId, content: finalContent, mediaUrl, mediaType });
 
         if (groupId) {
             // Group message notification
-            const group = await Group.findById(groupId);
+            const group = await Group.findById(groupId).select('memberIds name').lean();
             if (group && group.memberIds) {
                 const notifyPromises = group.memberIds
                     .filter((id: string) => id !== senderId)
@@ -77,14 +85,14 @@ export async function GET(req: Request) {
 
         let messages;
         if (groupId) {
-            messages = await Message.find({ groupId }).sort({ createdAt: 1 });
+            messages = await Message.find({ groupId }).sort({ createdAt: 1 }).lean();
         } else {
             messages = await Message.find({
                 $or: [
                     { senderId: user1, receiverId: user2 },
                     { senderId: user2, receiverId: user1 }
                 ]
-            }).sort({ createdAt: 1 });
+            }).sort({ createdAt: 1 }).lean();
         }
 
         return NextResponse.json({ success: true, data: messages }, { status: 200 });

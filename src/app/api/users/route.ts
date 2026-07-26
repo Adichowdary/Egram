@@ -2,14 +2,22 @@ import { NextResponse } from 'next/server';
 import connectMongo from '@/lib/mongodb';
 import User from '@/models/User';
 
-// GET all users
-export async function GET() {
-    try {
-        // Wait for the database connection
-        await connectMongo();
+export const dynamic = 'force-dynamic';
 
-        // Fetch users using the Mongoose model
-        const users = await User.find({}).sort({ createdAt: -1 });
+// GET users (supports ?ids=uid1,uid2,uid3 for batch fetching)
+export async function GET(req: Request) {
+    try {
+        await connectMongo();
+        const { searchParams } = new URL(req.url);
+        const idsParam = searchParams.get('ids');
+
+        let users;
+        if (idsParam) {
+            const uids = idsParam.split(',').filter(Boolean);
+            users = await User.find({ firebaseUid: { $in: uids } }).lean();
+        } else {
+            users = await User.find({}).sort({ createdAt: -1 }).lean();
+        }
 
         return NextResponse.json({ success: true, data: users }, { status: 200 });
     } catch (error) {

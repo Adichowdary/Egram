@@ -13,13 +13,16 @@ import { useToast } from "@/components/ToastProvider";
 import { motion, AnimatePresence } from "framer-motion";
 import { SplashScreen } from "@/components/SplashScreen";
 
+import { useRouter } from "next/navigation";
+
 export default function SearchPage() {
-    const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<any>(() => typeof window !== "undefined" && auth ? auth.currentUser : null);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(!(typeof window !== "undefined" && auth?.currentUser));
+    const router = useRouter();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
@@ -45,34 +48,47 @@ export default function SearchPage() {
 
                 setLoading(false);
             } else {
-                window.location.href = "/login";
+                router.push("/login");
             }
         });
 
         return () => unsubscribeAuth();
-    }, []);
+    }, [router]);
+
+    useEffect(() => {
+        if (!searchQuery.trim()) {
+            setSearchResults([]);
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            handleSearch();
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery, user?.uid]);
 
     const handleSearch = async (e?: React.FormEvent) => {
         e?.preventDefault();
-        if (!searchQuery.trim()) {
+        const queryTerm = searchQuery.trim();
+        if (!queryTerm) {
             setSearchResults([]);
             return;
         }
 
         setIsSearching(true);
         try {
-            const res = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}&uid=${user?.uid}`);
+            const res = await fetch(`/api/users/search?q=${encodeURIComponent(queryTerm)}&uid=${user?.uid || ''}`);
             if (res.ok) {
                 const users = await res.json();
-                // Map the results so components expecting `displayName`, `photoURL` still work. 
-                // Alternatively, just pass the Mongo User format to components.
                 const mappedUsers = users.map((u: any) => ({
                     uid: u.firebaseUid,
                     ...u,
-                    displayName: u.name,
+                    displayName: u.name || u.email?.split('@')[0] || "Learner",
                     photoURL: u.avatarUrl,
                     followersCount: u.followersCount || 0,
-                    followingCount: u.followingCount || 0
+                    followingCount: u.followingCount || 0,
+                    streak: u.currentStreak || 0
                 }));
                 setSearchResults(mappedUsers);
             }
@@ -184,11 +200,7 @@ export default function SearchPage() {
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         onFocus={() => setIsFocused(true)}
                                         onBlur={() => setIsFocused(false)}
-                                        onKeyUp={(e) => {
-                                            if (e.key === "Enter") handleSearch();
-                                            else if (searchQuery.length > 2) handleSearch();
-                                        }}
-                                        placeholder="Search for learners by name..."
+                                        placeholder="Search for friends by name or email..."
                                         style={{
                                             color: "var(--text-dark)",
                                             background: "transparent",

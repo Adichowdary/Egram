@@ -9,23 +9,26 @@ import { CreateMeetModal } from "@/components/CreateMeetModal";
 import { useRooms } from "@/hooks/useRooms";
 import { Compass, Video, Calendar, User, Search, Loader2 } from "lucide-react";
 
+import { useRouter } from "next/navigation";
+
 export default function ExplorePage() {
-    const [user, setUser] = useState<FirebaseUser | null>(null);
+    const [user, setUser] = useState<FirebaseUser | null>(() => typeof window !== "undefined" && auth ? auth.currentUser : null);
     const { rooms, loading } = useRooms();
     const [searchQuery, setSearchQuery] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+    const router = useRouter();
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
             } else {
-                window.location.href = "/login";
+                router.push("/login");
             }
         });
         return () => unsubscribe();
-    }, []);
+    }, [router]);
 
     const getInitials = (name: string | null) => {
         return name ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '?';

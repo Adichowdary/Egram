@@ -11,46 +11,69 @@ interface RightSidebarProps {
     getInitials: (name: string | null) => string;
 }
 
+const sidebarMongoCache = new Map<string, any>();
+const sidebarFirestoreCache = new Map<string, any>();
+
 export function RightSidebar({ user, handleSignOut, getInitials }: RightSidebarProps) {
     const { rooms, loading } = useRooms();
 
-    const [userData, setUserData] = useState<any>(null);
+    const [userData, setUserData] = useState<any>(() => user?.uid ? sidebarFirestoreCache.get(user.uid) || null : null);
+    const [mongoProfile, setMongoProfile] = useState<any>(() => user?.uid ? sidebarMongoCache.get(user.uid) || null : null);
+
+    const fetchUserData = async () => {
+        if (!user?.uid) return;
+        try {
+            // Fetch MongoDB user profile for primary display
+            const res = await fetch(`/api/users/${user.uid}`);
+            if (res.ok) {
+                const data = await res.json();
+                sidebarMongoCache.set(user.uid, data);
+                setMongoProfile(data);
+            }
+
+            // Fetch Firestore doc for legacy/streak data
+            const userRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+                const fData = userSnap.data();
+                sidebarFirestoreCache.set(user.uid, fData);
+                setUserData(fData);
+            }
+        } catch (err) {
+            console.error("Failed to fetch user data for sidebar", err);
+        }
+    };
 
     useEffect(() => {
-        if (!user?.uid) return;
-        const fetchUserData = async () => {
-            try {
-                const userRef = doc(db, "users", user.uid);
-                const userSnap = await getDoc(userRef);
-                if (userSnap.exists()) {
-                    setUserData(userSnap.data());
-                }
-            } catch (err) {
-                console.error("Failed to fetch user data for sidebar", err);
-            }
-        };
         fetchUserData();
-    }, [user]);
+
+        const handleProfileUpdate = () => fetchUserData();
+        window.addEventListener("userProfileUpdated", handleProfileUpdate);
+        return () => window.removeEventListener("userProfileUpdated", handleProfileUpdate);
+    }, [user?.uid]);
+
+    const displayName = mongoProfile?.name || userData?.displayName || user.displayName || (user.email ? user.email.split('@')[0] : "Student");
+    const avatarUrl = mongoProfile?.avatarUrl || user.photoURL;
 
     return (
         <aside className="right-sidebar">
             {/* Mini Profile */}
             <div className="mini-profile">
                 <div className="profile-avatar overflow-hidden rounded-full w-14 h-14 border-2 border-[var(--primary)] border-opacity-30">
-                    {user.photoURL ? (
-                        <img src={user.photoURL} alt="Your Profile" className="w-full h-full object-cover" />
+                    {avatarUrl ? (
+                        <img src={avatarUrl} alt="Your Profile" className="w-full h-full object-cover" />
                     ) : (
                         <div className="w-full h-full bg-[var(--primary-bg)] text-[var(--primary)] flex items-center justify-center font-bold text-xl uppercase">
-                            {getInitials(user.displayName || user.email)}
+                            {getInitials(displayName)}
                         </div>
                     )}
                 </div>
                 <div className="profile-info">
-                    <span className="username truncate max-w-[150px] text-[var(--text-dark)] font-bold">{user.email}</span>
+                    <span className="username truncate max-w-[150px] text-[var(--text-dark)] font-bold">{displayName}</span>
                     <span className="fullname flex items-center gap-1 text-[var(--text-light)]">
-                        {user.displayName || "Student"} •
+                        Student •
                         <div className="flex items-center gap-1 relative group cursor-pointer ml-1 whitespace-nowrap">
-                            <span style={{ color: "#ff6b6b", fontWeight: "bold" }}>{userData?.streak || 0} Day Streak</span>
+                            <span style={{ color: "#ff6b6b", fontWeight: "bold" }}>{mongoProfile?.currentStreak || userData?.streak || 0} Day Streak</span>
                             <span className="inline-flex items-center justify-center animate-pulse drop-shadow-[0_0_8px_rgba(255,107,107,0.8)] filter leading-none text-sm">🔥</span>
                             <Info className="w-3.5 h-3.5 text-[var(--text-light)] group-hover:text-[var(--text-dark)] transition-colors opacity-50" />
 

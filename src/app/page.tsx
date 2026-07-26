@@ -12,11 +12,12 @@ import { CreatePostModal } from "@/components/CreatePostModal";
 
 import { AnimatePresence } from "framer-motion";
 import { SplashScreen } from "@/components/SplashScreen";
+import { PageTransition } from "@/components/PageTransition";
 import { PresenceHandler } from "@/components/PresenceHandler";
 
 export default function Home() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(() => typeof window !== "undefined" && auth ? auth.currentUser : null);
+  const [loading, setLoading] = useState<boolean>(() => !(typeof window !== "undefined" && auth?.currentUser));
   const router = useRouter();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,18 +32,7 @@ export default function Home() {
       }
     });
 
-    // Safety fallback: if Firebase is blocked or offline, remove splash screen
-    const safetyTimeout = setTimeout(() => {
-      setLoading(false);
-      if (!auth.currentUser) {
-        router.push("/login");
-      }
-    }, 2500);
-
-    return () => {
-      clearTimeout(safetyTimeout);
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, [router]);
 
 
@@ -63,8 +53,7 @@ export default function Home() {
       </AnimatePresence>
 
       {!loading && user && (
-        <>
-          <PresenceHandler user={user} />
+        <PageTransition>
           <Sidebar
             user={user}
             setIsModalOpen={setIsModalOpen}
@@ -94,7 +83,7 @@ export default function Home() {
             onClose={() => setIsPostModalOpen(false)}
             user={user}
           />
-        </>
+        </PageTransition>
       )}
     </>
   );

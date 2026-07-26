@@ -13,6 +13,12 @@ export function useStreak(user: User | null) {
         }
 
         const updateStreak = async () => {
+            const sessionKey = `streak_updated_${user.uid}_${new Date().toDateString()}`;
+            if (typeof window !== "undefined" && sessionStorage.getItem(sessionKey)) {
+                setLoading(false);
+                return;
+            }
+
             try {
                 const res = await fetch(`/api/users/${user.uid}/streak`, {
                     method: "POST"
@@ -21,6 +27,9 @@ export function useStreak(user: User | null) {
                 if (res.ok) {
                     const data = await res.json();
                     setStreak(data.currentStreak || 0);
+                    if (typeof window !== "undefined") {
+                        sessionStorage.setItem(sessionKey, "true");
+                    }
                 }
             } catch (error) {
                 console.error("Error updating streak:", error);
@@ -30,7 +39,7 @@ export function useStreak(user: User | null) {
         };
 
         updateStreak();
-    }, [user]);
+    }, [user?.uid]);
 
     return { streak, loading };
 }

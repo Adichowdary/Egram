@@ -2,16 +2,20 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 
-export async function PUT(req: Request, { params }: { params: { userId: string } }) {
+export async function PUT(
+    req: Request,
+    { params }: { params: Promise<{ userId: string }> }
+) {
     try {
         await connectDB();
+        const { userId } = await params;
         const { targetUserId, action } = await req.json();
 
-        if (!targetUserId || !action || !params.userId) {
+        if (!targetUserId || !action || !userId) {
             return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
         }
 
-        const user = await User.findOne({ firebaseUid: params.userId });
+        const user = await User.findOne({ firebaseUid: userId });
         if (!user) {
             return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
         }

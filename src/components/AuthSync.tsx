@@ -16,7 +16,7 @@ export function AuthSync() {
                         body: JSON.stringify({
                             uid: user.uid,
                             email: user.email,
-                            displayName: user.displayName || user.email?.split('@')[0],
+                            displayName: user.displayName || undefined,
                             photoURL: user.photoURL,
                         }),
                     });

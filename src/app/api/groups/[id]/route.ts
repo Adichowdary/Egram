@@ -2,10 +2,13 @@ import { NextResponse } from 'next/server';
 import connectMongo from '@/lib/mongodb';
 import Group from '@/models/Group';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         await connectMongo();
-        const group = await Group.findById(params.id);
+        const { id } = await params;
+        const group = await Group.findById(id);
         if (!group) return NextResponse.json({ error: 'Group not found' }, { status: 404 });
         return NextResponse.json({ success: true, group });
     } catch (error) {
@@ -14,12 +17,16 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     }
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(
+    req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
     try {
         await connectMongo();
+        const { id } = await params;
         const { action, userId, requesterId } = await req.json();
 
-        const group = await Group.findById(params.id);
+        const group = await Group.findById(id);
         if (!group) return NextResponse.json({ error: 'Group not found' }, { status: 404 });
 
         const isAdmin = group.adminIds.includes(requesterId);

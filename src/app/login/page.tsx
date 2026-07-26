@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
+import { signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, updateProfile } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { AnimatePresence } from "framer-motion";
 import { SplashScreen } from "@/components/SplashScreen";
+
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
     const [isSignUp, setIsSignUp] = useState(false);
@@ -15,27 +17,7 @@ export default function LoginPage() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
-
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            if (currentUser) {
-                setInitialLoading(false);
-                window.location.href = "/";
-            } else {
-                setTimeout(() => setInitialLoading(false), 1000); // 1 second splash for guest
-            }
-        });
-
-        // Safety fallback: if Firebase is offline, show login form
-        const safetyTimeout = setTimeout(() => {
-            setInitialLoading(false);
-        }, 2500);
-
-        return () => {
-            clearTimeout(safetyTimeout);
-            unsubscribe();
-        };
-    }, []);
+    const router = useRouter();
 
     const saveUserToFirestore = async (user: any, customName?: string) => {
         if (!user) return;
@@ -76,16 +58,55 @@ export default function LoginPage() {
         }
     };
 
+    useEffect(() => {
+        if (typeof window !== "undefined" && auth) {
+            getRedirectResult(auth).then(async (result) => {
+                if (result?.user) {
+                    await saveUserToFirestore(result.user);
+                    router.push("/");
+                }
+            }).catch(err => console.error("Redirect auth error:", err));
+        }
+
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            if (currentUser) {
+                setInitialLoading(false);
+                router.push("/");
+            } else {
+                setInitialLoading(false);
+            }
+        });
+
+        return () => {
+            unsubscribe();
+        };
+    }, [router]);
+
     const handleGoogleSignIn = async () => {
         try {
             setLoading(true);
             setError("");
             const provider = new GoogleAuthProvider();
-            const result = await signInWithPopup(auth, provider);
-            await saveUserToFirestore(result.user);
-            window.location.href = "/";
+            try {
+                const result = await signInWithPopup(auth, provider);
+                await saveUserToFirestore(result.user);
+                router.push("/");
+            } catch (popupErr: any) {
+                if (popupErr.code === "auth/popup-blocked" || popupErr.code === "auth/popup-closed-by-user") {
+                    await signInWithRedirect(auth, provider);
+                } else {
+                    throw popupErr;
+                }
+            }
         } catch (err: any) {
-            setError(err.message || "Failed to sign in with Google.");
+            console.error("Google Sign-In error:", err);
+            if (err.code === "auth/unauthorized-domain") {
+                setError("Domain not authorized in Firebase. Please add 'egram-project.vercel.app' in Firebase Console > Authentication > Settings > Authorized domains.");
+            } else if (err.code === "auth/operation-not-allowed") {
+                setError("Google Sign-In is disabled in Firebase. Please enable 'Google' under Firebase Console > Authentication > Sign-in method.");
+            } else {
+                setError(err.message || "Failed to sign in with Google.");
+            }
         } finally {
             setLoading(false);
         }
@@ -101,12 +122,15 @@ export default function LoginPage() {
                     throw new Error("Full Name is required to sign up.");
                 }
                 const result = await createUserWithEmailAndPassword(auth, email, password);
+                if (name.trim()) {
+                    await updateProfile(result.user, { displayName: name.trim() }).catch((err: any) => console.error("Firebase updateProfile error:", err));
+                }
                 await saveUserToFirestore(result.user, name);
             } else {
                 const result = await signInWithEmailAndPassword(auth, email, password);
                 await saveUserToFirestore(result.user);
             }
-            window.location.href = "/";
+            router.push("/");
         } catch (err: any) {
             setError(err.message || "Authentication failed.");
         } finally {

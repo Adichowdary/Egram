@@ -1,14 +1,13 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  eslint: {
-    // Skip ESLint checks during production builds (not recommended long-term).
-    ignoreDuringBuilds: true,
-  },
+const nextConfig: any = {
   typescript: {
-    // Also skip TypeScript checks to ensure the build completes.
     ignoreBuildErrors: true,
-  }
+  },
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
+  },
+  compress: true,
 };
 
 export default nextConfig;

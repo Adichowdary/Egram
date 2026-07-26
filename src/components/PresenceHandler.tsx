@@ -1,15 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
-import { User } from "firebase/auth";
+import { useEffect, useState } from "react";
+import { User, onAuthStateChanged } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 
-interface PresenceHandlerProps {
-  user: User | null;
-}
+export function PresenceHandler() {
+  const [user, setUser] = useState<User | null>(() => typeof window !== "undefined" && auth ? auth.currentUser : null);
 
-export function PresenceHandler({ user }: PresenceHandlerProps) {
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribeAuth();
+  }, []);
+
   useEffect(() => {
     if (!user) return;
 
@@ -17,7 +22,6 @@ export function PresenceHandler({ user }: PresenceHandlerProps) {
 
     const updatePresence = async (status: boolean) => {
       try {
-        // Use setDoc with merge: true to create doc if it doesn't exist
         await setDoc(userRef, {
           uid: user.uid,
           email: user.email,
@@ -27,12 +31,10 @@ export function PresenceHandler({ user }: PresenceHandlerProps) {
           lastActive: serverTimestamp(),
         }, { merge: true });
       } catch (error) {
-        // Silently fail or log sparingly for presence updates
         console.warn("Presence update failed:", error);
       }
     };
 
-    // Initial online status - more aggressive pulse
     updatePresence(true);
     
     const handleVisibilityChange = () => {
@@ -41,11 +43,9 @@ export function PresenceHandler({ user }: PresenceHandlerProps) {
     };
 
     const handleBeforeUnload = () => {
-      // Browsers often throttle this, but we try
       updatePresence(false);
     };
 
-    // Periodic heartbeat (every 1 minute)
     const heartbeatInterval = setInterval(() => {
       if (document.visibilityState === "visible") {
         updatePresence(true);
@@ -59,9 +59,8 @@ export function PresenceHandler({ user }: PresenceHandlerProps) {
       clearInterval(heartbeatInterval);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      updatePresence(false);
     };
-  }, [user]);
+  }, [user?.uid]);
 
   return null;
 }

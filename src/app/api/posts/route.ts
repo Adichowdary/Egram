@@ -13,13 +13,16 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url);
         const type = searchParams.get('type');
         const userId = searchParams.get('userId');
+        const authorId = searchParams.get('authorId');
 
-        let query = {};
+        let query: any = {};
 
-        if (type === 'following' && userId) {
+        if (authorId) {
+            query = { author: authorId };
+        } else if (type === 'following' && userId) {
             // Get the list of people the user follows
-            const followingDocs = await mongoose.model('Follower').find({ followerId: userId });
-            const followingIds = followingDocs.map(doc => doc.followingId);
+            const followingDocs = await mongoose.model('Follower').find({ followerId: userId }).lean();
+            const followingIds = followingDocs.map((doc: any) => doc.followingId);
             query = { author: { $in: followingIds } };
         }
 
@@ -29,12 +32,16 @@ export async function GET(req: Request) {
             .limit(20) // Reduced limit for better performance and stability
             .lean();
 
-        // Manually "populate" author details since we use Firebase UIDs as strings
-        const postsWithAuthors = await Promise.all(posts.map(async (post: any) => {
-            const author = await User.findOne({ firebaseUid: post.author })
-                .select('name avatarUrl email firebaseUid')
-                .lean();
-            return { ...post, author };
+        // Batch fetch author details (1 single query instead of N queries)
+        const authorIds = Array.from(new Set(posts.map((p: any) => p.author)));
+        const authors = await User.find({ firebaseUid: { $in: authorIds } })
+            .select('name avatarUrl email firebaseUid')
+            .lean();
+
+        const authorMap = new Map(authors.map((a: any) => [a.firebaseUid, a]));
+        const postsWithAuthors = posts.map((post: any) => ({
+            ...post,
+            author: authorMap.get(post.author) || null,
         }));
 
         return NextResponse.json({ success: true, data: postsWithAuthors }, { status: 200 });

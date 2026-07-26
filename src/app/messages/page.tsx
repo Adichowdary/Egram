@@ -10,12 +10,15 @@ import { CreateMeetModal } from "@/components/CreateMeetModal";
 import { CreateGroupModal } from "@/components/CreateGroupModal";
 import { CreatePostModal } from "@/components/CreatePostModal";
 import { GroupInfoModal } from "@/components/GroupInfoModal";
-import { Send, User as UserIcon, MessageSquare, ImageIcon, Clock, Users, Plus, Info, Camera } from "lucide-react";
+import { Send, User as UserIcon, MessageSquare, ImageIcon, Clock, Users, Plus, Info, Camera, Paperclip, FileText, MoreVertical, Trash } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useScreenshotDetection } from "@/hooks/useScreenshotDetection";
 
+import { useRouter } from "next/navigation";
+
 export default function MessagesPage() {
-    const [user, setUser] = useState<FirebaseUser | null>(null);
+    const [user, setUser] = useState<FirebaseUser | null>(() => typeof window !== "undefined" && auth ? auth.currentUser : null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
     const [conversations, setConversations] = useState<any[]>([]);
@@ -32,21 +35,29 @@ export default function MessagesPage() {
     const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
     const [allowScreenshotNotifications, setAllowScreenshotNotifications] = useState(true);
     const [isUploadingWallpaper, setIsUploadingWallpaper] = useState(false);
+    const [chatFile, setChatFile] = useState<File | null>(null);
+    const [isUploadingChatFile, setIsUploadingChatFile] = useState(false);
+    const [openMessageMenuId, setOpenMessageMenuId] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const chatFileInputRef = useRef<HTMLInputElement>(null);
+    const router = useRouter();
 
     useEffect(() => {
+        if (auth.currentUser) {
+            fetchContacts(auth.currentUser.uid);
+            fetchGroups(auth.currentUser.uid);
+        }
+
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
-                fetchContacts(currentUser.uid);
-                fetchGroups(currentUser.uid);
             } else {
-                window.location.href = "/login";
+                router.push("/login");
             }
         });
         return () => unsubscribe();
-    }, []);
+    }, [router]);
 
     const fetchContacts = async (uid: string) => {
         try {
@@ -65,17 +76,18 @@ export default function MessagesPage() {
                     setAllowScreenshotNotifications(userData.allowScreenshotNotifications);
                 }
 
-                const contactIds = Array.from(new Set([...(userData.following || []), ...(userData.followers || [])]));
+                const contactIds = Array.from(new Set([...(userData.following || []), ...(userData.followers || [])])) as string[];
 
-                // Fetch profiles for these contact IDs
-                const contactsData = [];
-                for (const contactId of contactIds) {
-                    const contactRes = await fetch(`/api/users/${contactId}`);
-                    if (contactRes.ok) {
-                        contactsData.push(await contactRes.json());
+                // Fetch profiles for these contact IDs in 1 single batch request
+                if (contactIds.length > 0) {
+                    const contactsRes = await fetch(`/api/users?ids=${contactIds.join(',')}`);
+                    if (contactsRes.ok) {
+                        const contactsResult = await contactsRes.json();
+                        setConversations(contactsResult.data || []);
                     }
+                } else {
+                    setConversations([]);
                 }
-                setConversations(contactsData);
             }
         } catch (error) {
             console.error("Error fetching contacts:", error);
@@ -96,7 +108,7 @@ export default function MessagesPage() {
         }
     };
 
-    const fetchMessages = async (contactId: string, isGroup: boolean = false) => {
+    const fetchMessages = async (contactId: string, isGroup: boolean = false, isInitial: boolean = false) => {
         if (!user) return;
         try {
             const url = isGroup
@@ -105,8 +117,16 @@ export default function MessagesPage() {
             const res = await fetch(url);
             if (res.ok) {
                 const data = await res.json();
-                setMessages(data.data || []);
-                scrollToBottom();
+                const fetched: any[] = data.data || [];
+                setMessages(prev => {
+                    if (prev.length === fetched.length && (prev.length === 0 || prev[prev.length - 1]?._id === fetched[fetched.length - 1]?._id)) {
+                        return prev;
+                    }
+                    return fetched;
+                });
+                if (isInitial) {
+                    setTimeout(scrollToBottom, 50);
+                }
             }
         } catch (error) {
             console.error("Error fetching messages:", error);
@@ -115,16 +135,16 @@ export default function MessagesPage() {
 
     useEffect(() => {
         if (selectedUser) {
-            fetchMessages(selectedUser.firebaseUid, false);
+            fetchMessages(selectedUser.firebaseUid, false, true);
             const interval = setInterval(() => {
-                fetchMessages(selectedUser.firebaseUid, false);
-            }, 5000);
+                fetchMessages(selectedUser.firebaseUid, false, false);
+            }, 4000);
             return () => clearInterval(interval);
         } else if (selectedGroup) {
-            fetchMessages(selectedGroup._id, true);
+            fetchMessages(selectedGroup._id, true, true);
             const interval = setInterval(() => {
-                fetchMessages(selectedGroup._id, true);
-            }, 5000);
+                fetchMessages(selectedGroup._id, true, false);
+            }, 4000);
             return () => clearInterval(interval);
         }
     }, [selectedUser, selectedGroup]);
@@ -133,9 +153,45 @@ export default function MessagesPage() {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
+    const handleChatFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setChatFile(file);
+        }
+    };
+
+    const handleDeleteMessage = async (messageId: string, action: 'deleteForMe' | 'deleteForEveryone') => {
+        if (!user) return;
+        try {
+            const res = await fetch(`/api/messages/${messageId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.uid, action })
+            });
+
+            if (res.ok) {
+                // Optimistically update UI
+                setMessages(prev => prev.map(msg => {
+                    if (msg._id === messageId || msg.id === messageId) {
+                        if (action === 'deleteForEveryone') {
+                            return { ...msg, deletedForEveryone: true, content: "This message was deleted", mediaUrl: undefined, mediaType: undefined };
+                        } else {
+                            return { ...msg, deletedForMe: [...(msg.deletedForMe || []), user.uid] };
+                        }
+                    }
+                    return msg;
+                }));
+            }
+        } catch (error) {
+            console.error("Failed to delete message", error);
+        } finally {
+            setOpenMessageMenuId(null);
+        }
+    };
+
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newMessage.trim() || !user || (!selectedUser && !selectedGroup)) return;
+        if ((!newMessage.trim() && !chatFile) || !user || (!selectedUser && !selectedGroup)) return;
 
         const content = newMessage.trim();
         setNewMessage("");
@@ -144,18 +200,35 @@ export default function MessagesPage() {
         const groupId = selectedGroup ? selectedGroup._id : undefined;
 
         // Optimistic UI update
+        const tempMessageId = Date.now().toString();
         const tempMessage = {
-            id: Date.now().toString(),
+            id: tempMessageId,
             senderId: user.uid,
             receiverId,
             groupId,
             content,
+            mediaUrl: chatFile ? URL.createObjectURL(chatFile) : undefined, // Preview
+            mediaType: chatFile ? (chatFile.type.startsWith('image/') ? 'image' : 'pdf') : undefined,
             createdAt: new Date().toISOString()
         };
         setMessages(prev => [...prev, tempMessage]);
         scrollToBottom();
 
         try {
+            let mediaUrl = undefined;
+            let mediaType = undefined;
+
+            if (chatFile) {
+                setIsUploadingChatFile(true);
+                mediaType = chatFile.type.startsWith('image/') ? 'image' : 'pdf';
+                const path = `chat_media/${user.uid}/${Date.now()}_${chatFile.name}`;
+                const fileRef = storageRef(storage, path);
+                const snapshot = await uploadBytes(fileRef, chatFile);
+                mediaUrl = await getDownloadURL(snapshot.ref);
+                setChatFile(null); // Clear file after upload
+                setIsUploadingChatFile(false);
+            }
+
             const res = await fetch('/api/messages', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -163,7 +236,9 @@ export default function MessagesPage() {
                     senderId: user.uid,
                     receiverId,
                     groupId,
-                    content
+                    content,
+                    mediaUrl,
+                    mediaType
                 })
             });
             if (!res.ok) {
@@ -173,12 +248,15 @@ export default function MessagesPage() {
                 } else {
                     throw new Error("Failed to send message");
                 }
+            } else {
+                // Update temp message with real DB ID if possible, or just refetch
+                fetchMessages(selectedGroup ? selectedGroup._id : selectedUser.firebaseUid, !!selectedGroup);
             }
-            // Message synced successfully
         } catch (error) {
             console.error(error);
             // Revert optimistic update on failure
-            setMessages(prev => prev.filter(m => m.id !== tempMessage.id));
+            setMessages(prev => prev.filter(m => m.id !== tempMessageId));
+            setIsUploadingChatFile(false);
         }
     };
 
@@ -529,12 +607,14 @@ export default function MessagesPage() {
 
                                 <div style={{ flex: 1, overflowY: "auto", padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
                                     {messages.map((msg, index) => {
+                                        if (msg.deletedForMe && msg.deletedForMe.includes(user.uid)) return null;
+
                                         const isMine = msg.senderId === user.uid;
-                                        // For groups: try to find the sender's details in `conversations` (a bit of a hack since we don't populate message senders natively here)
                                         const senderDetails = selectedGroup && !isMine ? conversations.find(c => c.firebaseUid === msg.senderId) : null;
+                                        const isMenuOpen = openMessageMenuId === (msg._id || msg.id);
 
                                         return (
-                                            <div key={msg._id || msg.id} style={{ display: "flex", justifyContent: isMine ? "flex-end" : "flex-start", gap: "0.5rem", alignItems: "flex-end" }}>
+                                            <div key={msg._id || msg.id} className="relative group" style={{ display: "flex", justifyContent: isMine ? "flex-end" : "flex-start", gap: "0.5rem", alignItems: "flex-end" }}>
                                                 {selectedGroup && !isMine && (
                                                     <div className="w-8 h-8 rounded-full overflow-hidden bg-zinc-700 flex-shrink-0 mb-1">
                                                         {senderDetails?.avatarUrl ? (
@@ -546,6 +626,29 @@ export default function MessagesPage() {
                                                         )}
                                                     </div>
                                                 )}
+                                                
+                                                {!isMine && (
+                                                    <div className="relative opacity-0 group-hover:opacity-100 transition-opacity mb-2">
+                                                        <button onClick={() => setOpenMessageMenuId(isMenuOpen ? null : (msg._id || msg.id))} className="text-zinc-500 hover:text-white p-1">
+                                                            <MoreVertical size={16} />
+                                                        </button>
+                                                        <AnimatePresence>
+                                                            {isMenuOpen && (
+                                                                <motion.div
+                                                                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                                                    className="absolute left-0 bottom-full mb-1 w-36 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-50 overflow-hidden flex flex-col origin-bottom-left"
+                                                                >
+                                                                    <button onClick={() => handleDeleteMessage(msg._id || msg.id, 'deleteForMe')} className="text-left px-3 py-2 text-sm text-red-500 hover:bg-zinc-800/50 flex items-center gap-2">
+                                                                        <Trash size={14} /> Delete for me
+                                                                    </button>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </div>
+                                                )}
+
                                                 <div style={{ maxWidth: "70%", display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start" }}>
                                                     {selectedGroup && !isMine && senderDetails && (
                                                         <span className="text-xs text-zinc-400 font-medium ml-2 mb-1">{senderDetails.name}</span>
@@ -558,9 +661,47 @@ export default function MessagesPage() {
                                                         fontSize: "0.95rem",
                                                         boxShadow: "0 2px 5px rgba(0,0,0,0.05)"
                                                     }}>
-                                                        {msg.content}
+                                                        {msg.deletedForEveryone ? (
+                                                            <span className="italic opacity-70 flex items-center gap-2"><Trash size={14} /> This message was deleted</span>
+                                                        ) : (
+                                                            <>
+                                                                {msg.mediaUrl && msg.mediaType === 'image' && (
+                                                                    <img src={msg.mediaUrl} alt="attachment" className="max-w-full rounded-lg mb-2 object-contain bg-black/20" style={{ maxHeight: '200px' }} loading="lazy" />
+                                                                )}
+                                                                {msg.mediaUrl && msg.mediaType === 'pdf' && (
+                                                                    <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 bg-black/20 rounded-lg mb-2 hover:bg-black/30 transition-colors border border-white/10">
+                                                                        <FileText size={24} className={isMine ? "text-white" : "text-red-400"} />
+                                                                        <span className="text-sm font-medium underline">View PDF Document</span>
+                                                                    </a>
+                                                                )}
+                                                                {msg.content}
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </div>
+
+                                                {isMine && (
+                                                    <div className="relative opacity-0 group-hover:opacity-100 transition-opacity mb-2">
+                                                        <button onClick={() => setOpenMessageMenuId(isMenuOpen ? null : (msg._id || msg.id))} className="text-zinc-500 hover:text-white p-1">
+                                                            <MoreVertical size={16} />
+                                                        </button>
+                                                        <AnimatePresence>
+                                                            {isMenuOpen && (
+                                                                <motion.div
+                                                                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                                                    className="absolute right-0 bottom-full mb-1 w-44 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-50 overflow-hidden flex flex-col origin-bottom-right"
+                                                                >
+                                                                    <button onClick={() => handleDeleteMessage(msg._id || msg.id, 'deleteForMe')} className="text-left px-3 py-2 text-sm text-white hover:bg-zinc-800/50">Delete for me</button>
+                                                                    <button onClick={() => handleDeleteMessage(msg._id || msg.id, 'deleteForEveryone')} className="text-left px-3 py-2 text-sm text-red-500 hover:bg-zinc-800/50 flex items-center gap-2">
+                                                                        <Trash size={14} /> Delete for everyone
+                                                                    </button>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })}
@@ -573,28 +714,51 @@ export default function MessagesPage() {
                                             You have blocked this user. Unblock to send messages.
                                         </div>
                                     ) : (
-                                        <form onSubmit={handleSendMessage} style={{ display: "flex", gap: "1rem" }}>
-                                            <input
-                                                type="text"
-                                                value={newMessage}
-                                                onChange={(e) => setNewMessage(e.target.value)}
-                                                placeholder="Type a message..."
-                                                style={{
-                                                    flex: 1,
-                                                    padding: "0.8rem 1.2rem",
-                                                    borderRadius: "24px",
-                                                    border: "1px solid var(--card-border)",
-                                                    background: "var(--background)",
-                                                    color: "var(--text-dark)",
-                                                    outline: "none"
-                                                }}
-                                            />
+                                        <form onSubmit={handleSendMessage} style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                                            <div className="flex gap-2 items-center bg-[var(--background)] rounded-full px-2 border border-[var(--card-border)] flex-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => chatFileInputRef.current?.click()}
+                                                    className={`p-2 rounded-full transition-colors flex items-center justify-center ${chatFile ? 'text-blue-500' : 'text-zinc-500 hover:text-white'}`}
+                                                >
+                                                    <Paperclip className="w-5 h-5" />
+                                                </button>
+                                                <input
+                                                    type="file"
+                                                    ref={chatFileInputRef}
+                                                    onChange={handleChatFileChange}
+                                                    accept="image/*,application/pdf"
+                                                    className="hidden"
+                                                />
+                                                {chatFile ? (
+                                                    <div className="flex-1 text-sm text-blue-400 font-medium truncate py-2 flex items-center gap-2">
+                                                        {chatFile.type.startsWith('image/') ? <ImageIcon size={16} /> : <FileText size={16} />}
+                                                        <span className="truncate">{chatFile.name}</span>
+                                                        <button type="button" onClick={() => setChatFile(null)} className="text-zinc-500 hover:text-red-500 ml-auto">✕</button>
+                                                    </div>
+                                                ) : (
+                                                    <input
+                                                        type="text"
+                                                        value={newMessage}
+                                                        onChange={(e) => setNewMessage(e.target.value)}
+                                                        placeholder="Type a message..."
+                                                        style={{
+                                                            flex: 1,
+                                                            padding: "0.8rem 0.5rem",
+                                                            background: "transparent",
+                                                            color: "var(--text-dark)",
+                                                            outline: "none",
+                                                            border: "none"
+                                                        }}
+                                                    />
+                                                )}
+                                            </div>
                                             <button
                                                 type="submit"
-                                                disabled={!newMessage.trim()}
+                                                disabled={(!newMessage.trim() && !chatFile) || isUploadingChatFile}
                                                 style={{
-                                                    background: newMessage.trim() ? "var(--primary)" : "var(--card-border)",
-                                                    color: newMessage.trim() ? "white" : "var(--text-light)",
+                                                    background: (newMessage.trim() || chatFile) ? "var(--primary)" : "var(--card-border)",
+                                                    color: (newMessage.trim() || chatFile) ? "white" : "var(--text-light)",
                                                     border: "none",
                                                     borderRadius: "50%",
                                                     width: "45px",
@@ -602,11 +766,15 @@ export default function MessagesPage() {
                                                     display: "flex",
                                                     justifyContent: "center",
                                                     alignItems: "center",
-                                                    cursor: newMessage.trim() ? "pointer" : "not-allowed",
+                                                    cursor: (newMessage.trim() || chatFile) ? "pointer" : "not-allowed",
                                                     transition: "all 0.2s"
                                                 }}
                                             >
-                                                <Send size={20} />
+                                                {isUploadingChatFile ? (
+                                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                ) : (
+                                                    <Send size={20} />
+                                                )}
                                             </button>
                                         </form>
                                     )}

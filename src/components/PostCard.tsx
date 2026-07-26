@@ -1,22 +1,8 @@
 import { useState, useEffect } from "react";
-import { doc, updateDoc, arrayUnion, arrayRemove, collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { User } from "firebase/auth";
 import { MoreHorizontal, Heart, MessageCircle, Send, Bookmark, Share } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "./ToastProvider";
-
-export interface Post {
-    id: string;
-    authorId: string;
-    authorName: string;
-    authorInitials: string;
-    content: string;
-    mediaUrl?: string;
-    timestamp: any;
-    likes: string[];
-    commentsCount?: number;
-}
+import { usePosts, Post } from "@/hooks/usePosts";
 
 interface Comment {
     id: string;
@@ -29,60 +15,51 @@ interface Comment {
 
 interface PostCardProps {
     post: Post;
-    user: User;
+    user: any; // User type from Firebase
     getInitials: (name: string | null) => string;
+    onDelete?: (postId: string) => void;
 }
 
-export function PostCard({ post, user, getInitials }: PostCardProps) {
-    const [isLiked, setIsLiked] = useState(post.likes.includes(user.uid));
+export function PostCard({ post: initialPost, user, getInitials, onDelete }: PostCardProps) {
+    const [post, setPost] = useState(initialPost);
+    const [isLiked, setIsLiked] = useState(initialPost.likes.includes(user.uid));
     const [showComments, setShowComments] = useState(false);
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [showBigHeart, setShowBigHeart] = useState(false);
+    const [isImageLoading, setIsImageLoading] = useState(true);
+    const [showMenu, setShowMenu] = useState(false);
+    
     const { addToast } = useToast();
+    const { toggleLike, addComment, deletePost, isSubmitting } = usePosts(user);
 
     useEffect(() => {
-        setIsLiked(post.likes.includes(user.uid));
-    }, [post.likes, user.uid]);
+        setPost(initialPost);
+        setIsLiked(initialPost.likes.includes(user.uid));
+    }, [initialPost, user.uid]);
 
-    useEffect(() => {
-        if (!showComments) return;
-
-        // Fetch comments from MongoDB since we moved types
-        const fetchComments = async () => {
-            try {
-                const res = await fetch(`/api/posts`); // We'll assume the feed might have them or add a sub-route
-                // For now, we've already gotten some comments in the feed, but if we want fresh ones:
-                // We'll trust the initial load or use the POST result.
-            } catch (err) {
-                console.error(err);
-            }
-        };
-        fetchComments();
-    }, [showComments, post.id]);
-
+    // Optimistic Like
     const handleLike = async () => {
         const wasLiked = isLiked;
+        const newLikes = wasLiked 
+            ? post.likes.filter(id => id !== user.uid)
+            : [...post.likes, user.uid];
+        
+        // Update UI immediately
         setIsLiked(!wasLiked);
+        setPost(prev => ({ ...prev, likes: newLikes }));
 
         try {
-            const res = await fetch(`/api/posts/${post.id}/like`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId: user.uid })
-            });
-            if (!res.ok) throw new Error("Failed to like");
+            await toggleLike(post, wasLiked);
         } catch (error) {
-            console.error("Error toggling like:", error);
+            // Revert on failure
             setIsLiked(wasLiked);
+            setPost(prev => ({ ...prev, likes: wasLiked ? [...prev.likes, user.uid] : prev.likes.filter(id => id !== user.uid) }));
         }
     };
 
     const handleDoubleTap = () => {
-        if (!isLiked) {
-            handleLike();
-        }
+        if (!isLiked) handleLike();
         setShowBigHeart(true);
         setTimeout(() => setShowBigHeart(false), 800);
     };
@@ -90,42 +67,60 @@ export function PostCard({ post, user, getInitials }: PostCardProps) {
     const handleShare = async () => {
         try {
             await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
-            addToast("Post link copied to clipboard!", "success");
+            addToast("Post link copied!", "success");
         } catch (err) {
-            console.error('Failed to copy', err);
             addToast("Failed to copy link", "error");
         }
     };
 
+    // Optimistic Comment
     const handleAddComment = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newComment.trim() || isSubmitting) return;
+        const text = newComment.trim();
+        if (!text || isSubmitting) return;
 
-        setIsSubmitting(true);
+        const optimisticComment: Comment = {
+            id: `temp-${Date.now()}`,
+            authorId: user.uid,
+            authorName: user.displayName || "You",
+            authorInitials: getInitials(user.displayName),
+            text,
+            timestamp: { toDate: () => new Date() }
+        };
+
+        // Update UI immediately
+        setComments(prev => [optimisticComment, ...prev]);
+        setNewComment("");
+        setPost(prev => ({ ...prev, commentsCount: (prev.commentsCount || 0) + 1 }));
+
         try {
-            const res = await fetch(`/api/posts/${post.id}/comment`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId: user.uid, text: newComment.trim() })
-            });
+            const serverComments = await addComment(post.id, text);
+            // Sync with server if needed or just leave the optimistic one until next refresh
+            // But usually we map server response back to ensure proper IDs
+            setComments(serverComments.map((c: any) => ({
+                id: c._id,
+                authorId: c.user,
+                authorName: c.userName || "User",
+                authorInitials: getInitials(c.userName),
+                text: c.text,
+                timestamp: { toDate: () => new Date(c.createdAt) }
+            })));
+        } catch (error) {
+            // Revert on failure
+            setComments(prev => prev.filter(c => c.id !== optimisticComment.id));
+            setPost(prev => ({ ...prev, commentsCount: (prev.commentsCount || 1) - 1 }));
+            setNewComment(text); // restore text
+        }
+    };
 
-            if (res.ok) {
-                const data = await res.json();
-                // Manually map the comments if we want real-time update in this component
-                setComments(data.comments.map((c: any) => ({
-                    id: c._id,
-                    authorId: c.user,
-                    authorName: "You", // Simple mapping for immediate feedback
-                    authorInitials: getInitials(user.displayName),
-                    text: c.text,
-                    timestamp: { toDate: () => new Date(c.createdAt) }
-                })));
-                setNewComment("");
+    const handleDelete = async () => {
+        try {
+            await deletePost(post.id);
+            if (onDelete) {
+                onDelete(post.id);
             }
         } catch (error) {
-            console.error("Error adding comment: ", error);
-        } finally {
-            setIsSubmitting(false);
+            // Error handling is in the hook
         }
     };
 
@@ -139,12 +134,44 @@ export function PostCard({ post, user, getInitials }: PostCardProps) {
                         {post.timestamp?.toDate() ? new Date(post.timestamp.toDate()).toLocaleDateString() : "Just now"}
                     </span>
                 </div>
-                <MoreHorizontal className="ml-auto cursor-pointer" />
+                <div className="relative ml-auto">
+                    <MoreHorizontal 
+                        className="cursor-pointer" 
+                        onClick={() => setShowMenu(!showMenu)}
+                        aria-label="More options" 
+                    />
+                    <AnimatePresence>
+                        {showMenu && post.authorId === user.uid && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                className="absolute right-0 mt-2 w-32 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl z-50 overflow-hidden"
+                            >
+                                <button
+                                    onClick={handleDelete}
+                                    className="w-full text-left px-4 py-2.5 text-sm font-medium text-red-500 hover:bg-zinc-800/50 transition-colors"
+                                >
+                                    Delete Post
+                                </button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
 
             {post.mediaUrl && (
                 <div className="post-media-container bg-zinc-950 relative overflow-hidden flex items-center justify-center cursor-pointer select-none" onDoubleClick={handleDoubleTap}>
-                    <img src={post.mediaUrl} alt="Post content" className="post-image pointer-events-none" loading="lazy" />
+                    {isImageLoading && (
+                        <div className="absolute inset-0 animate-shimmer" />
+                    )}
+                    <img 
+                        src={post.mediaUrl} 
+                        alt="Post content" 
+                        className={`post-image pointer-events-none transition-opacity duration-150 ${isImageLoading ? 'opacity-0' : 'opacity-100'}`} 
+                        loading="lazy" 
+                        onLoad={() => setIsImageLoading(false)}
+                    />
                     
                     {/* Big Heart Animation Overlay */}
                     <AnimatePresence>
@@ -169,15 +196,20 @@ export function PostCard({ post, user, getInitials }: PostCardProps) {
                         whileTap={{ scale: 0.8 }}
                         onClick={handleLike}
                         className={`action-btn ${isLiked ? 'text-red-500' : ''}`}
+                        aria-label={isLiked ? "Unlike post" : "Like post"}
                     >
                         <Heart fill={isLiked ? "currentColor" : "none"} />
                     </motion.button>
-                    <button onClick={() => setShowComments(!showComments)} className="action-btn">
+                    <button 
+                        onClick={() => setShowComments(!showComments)} 
+                        className="action-btn"
+                        aria-label="Toggle comments"
+                    >
                         <MessageCircle />
                     </button>
-                    <button className="action-btn"><Send /></button>
+                    <button className="action-btn" aria-label="Send post"><Send /></button>
                 </div>
-                <button onClick={handleShare} className="action-btn"><Share className="w-5 h-5 transition-transform hover:-translate-y-1" /></button>
+                <button onClick={handleShare} className="action-btn" aria-label="Share post"><Share className="w-5 h-5 transition-transform hover:-translate-y-1" /></button>
             </div>
 
             <div className="post-content">
@@ -208,10 +240,15 @@ export function PostCard({ post, user, getInitials }: PostCardProps) {
                                 <p className="text-sm text-zinc-500 text-center py-2">No comments yet. Start the conversation!</p>
                             ) : (
                                 comments.map(comment => (
-                                    <div key={comment.id} className="flex gap-2 text-sm">
+                                    <motion.div 
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        key={comment.id} 
+                                        className="flex gap-2 text-sm"
+                                    >
                                         <span className="font-semibold">{comment.authorName}</span>
                                         <span className="text-zinc-300 break-words flex-1">{comment.text}</span>
-                                    </div>
+                                    </motion.div>
                                 ))
                             )}
                         </div>
@@ -228,7 +265,7 @@ export function PostCard({ post, user, getInitials }: PostCardProps) {
                                 disabled={!newComment.trim() || isSubmitting}
                                 className="text-primary font-semibold text-sm disabled:opacity-50 ml-2"
                             >
-                                Post
+                                {isSubmitting ? "..." : "Post"}
                             </button>
                         </form>
                     </motion.div>

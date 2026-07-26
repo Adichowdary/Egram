@@ -46,12 +46,14 @@ body {
 .dark {
     --primary: #0095f6;
     --accent: #f5f5f5;
-    --background: #000000;
+    --background: #000000; /* Pure OLED black */
     --text-dark: #ffffff;
-    --text-light: #a8a8a8;
-    --card-bg: #121212;
+    --text-light: #8e8e8e;
+    --card-bg: #121212; /* Elevation 1 */
     --card-border: #262626;
-    --modal-bg: rgba(0, 0, 0, 0.5);
+    --modal-bg: rgba(0, 0, 0, 0.8);
+    --secondary: #A084E8;
+    --secondary-bg: rgba(160, 132, 232, 0.1);
 }
 
 /* Global Reset */
@@ -685,4 +687,26 @@ button:active,
     background: linear-gradient(90deg, var(--card-bg) 0%, var(--card-border) 50%, var(--card-bg) 100%);
     background-size: 1000px 100%;
     animation: shimmer 2s infinite linear;
+}
+
+@keyframes gradient-xy {
+    0%, 100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+.animate-gradient-xy {
+    background-size: 400% 400%;
+    animation: gradient-xy 3s ease infinite;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }

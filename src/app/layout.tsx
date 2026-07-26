@@ -31,6 +31,8 @@ export const viewport: Viewport = {
   ],
 };
 
+import { PresenceHandler } from "@/components/PresenceHandler";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -45,6 +47,7 @@ export default function RootLayout({
         <ThemeProvider>
           <ToastProvider>
             <AuthSync />
+            <PresenceHandler />
             {children}
           </ToastProvider>
         </ThemeProvider>

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import connectMongo from "@/lib/mongodb";
 import Group from "@/models/Group";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
     try {
         await connectMongo();

@@ -1,13 +1,19 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export const useScreenshotDetection = (enabled: boolean, onDetect: () => void) => {
+    const onDetectRef = useRef(onDetect);
+
+    useEffect(() => {
+        onDetectRef.current = onDetect;
+    }, [onDetect]);
+
     useEffect(() => {
         if (!enabled) return;
 
         const handleKeyUp = (e: KeyboardEvent) => {
             // Detect PrintScreen
             if (e.key === 'PrintScreen') {
-                onDetect();
+                onDetectRef.current();
             }
         };
 
@@ -17,7 +23,7 @@ export const useScreenshotDetection = (enabled: boolean, onDetect: () => void) =
             // '3' or '4' + meta + shift
             if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
                 if (e.key === 's' || e.key === 'S' || e.key === '3' || e.key === '4') {
-                    onDetect();
+                    onDetectRef.current();
                 }
             }
         };
@@ -29,5 +35,5 @@ export const useScreenshotDetection = (enabled: boolean, onDetect: () => void) =
             window.removeEventListener('keyup', handleKeyUp);
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [enabled, onDetect]);
+    }, [enabled]);
 };

@@ -15,17 +15,23 @@ export async function POST(req: Request) {
         let user = await User.findOne({ firebaseUid: uid });
 
         if (!user) {
+            const initialName = (displayName && !displayName.includes('@')) ? displayName : email.split("@")[0];
             user = await User.create({
                 firebaseUid: uid,
                 email,
-                name: displayName || email.split("@")[0],
+                name: initialName,
                 avatarUrl: photoURL || "",
             });
             return NextResponse.json({ message: "User created", user }, { status: 201 });
         } else {
-            // Update basic info to keep sync
-            user.name = displayName || user.name;
-            user.avatarUrl = photoURL || user.avatarUrl;
+            // Preserve existing name in MongoDB if set. Only initialize if name is missing.
+            if (!user.name || user.name.trim() === "") {
+                user.name = (displayName && !displayName.includes('@')) ? displayName : email.split("@")[0];
+            }
+
+            if (photoURL && !user.avatarUrl) {
+                user.avatarUrl = photoURL;
+            }
             await user.save();
         }
 

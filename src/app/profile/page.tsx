@@ -10,6 +10,11 @@ export default function ProfileRedirect() {
     const router = useRouter();
 
     useEffect(() => {
+        if (typeof window !== "undefined" && auth?.currentUser) {
+            router.replace(`/profile/${auth.currentUser.uid}`);
+            return;
+        }
+
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
                 router.replace(`/profile/${user.uid}`);

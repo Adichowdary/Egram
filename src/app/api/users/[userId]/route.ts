@@ -9,7 +9,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ userId: 
         await connectMongo();
         const userId = (await params).userId;
 
-        const user = await User.findOne({ firebaseUid: userId });
+        const user = await User.findOne({ firebaseUid: userId }).lean();
 
         if (!user) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });

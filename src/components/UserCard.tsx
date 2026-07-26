@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { UserPlus, UserCheck } from "lucide-react";
+import { UserPlus, UserCheck, Share2 } from "lucide-react";
+import { useToast } from "@/components/ToastProvider";
 
 interface UserProfile {
     uid: string;
@@ -19,9 +20,33 @@ interface UserCardProps {
 }
 
 export function UserCard({ profile, isFollowing, onFollow, showFollowButton = true }: UserCardProps) {
+    const { addToast } = useToast();
+
     const getInitials = (name: string | null) => {
         if (!name) return "U";
         return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    };
+
+    const handleShare = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const shareUrl = `${window.location.origin}/profile/${profile.uid}`;
+        if (typeof navigator !== "undefined" && navigator.share) {
+            try {
+                await navigator.share({
+                    title: `${profile.displayName || 'User'}'s Profile on Egram`,
+                    text: `Check out ${profile.displayName || 'User'}'s profile on Egram!`,
+                    url: shareUrl,
+                });
+                return;
+            } catch (err) {
+                // User cancelled or share API error, fallback to clipboard write
+            }
+        }
+        if (typeof navigator !== "undefined" && navigator.clipboard) {
+            await navigator.clipboard.writeText(shareUrl);
+            addToast("Profile link copied to clipboard!", "success");
+        }
     };
 
     return (
@@ -73,29 +98,39 @@ export function UserCard({ profile, isFollowing, onFollow, showFollowButton = tr
                 </div>
             </Link>
 
-            {showFollowButton && (
+            <div className="flex items-center gap-2 ml-3 flex-shrink-0">
                 <button
-                    onClick={(e) => {
-                        e.preventDefault();
-                        onFollow?.(profile.uid);
-                    }}
-                    className="ml-3 flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all active:scale-95 flex-shrink-0"
-                    style={isFollowing ? {
-                        background: "var(--accent-bg)",
-                        color: "var(--text-light)",
-                        border: "1px solid var(--card-border)",
-                    } : {
-                        background: "var(--primary)",
-                        color: "#fff",
-                    }}
+                    onClick={handleShare}
+                    title="Share Profile"
+                    className="p-2 rounded-xl text-xs font-bold transition-all active:scale-95 text-zinc-400 hover:text-[var(--primary)] bg-white/5 hover:bg-white/10"
                 >
-                    {isFollowing ? (
-                        <><UserCheck className="w-3.5 h-3.5" /> Following</>
-                    ) : (
-                        <><UserPlus className="w-3.5 h-3.5" /> Follow</>
-                    )}
+                    <Share2 className="w-4 h-4" />
                 </button>
-            )}
+
+                {showFollowButton && (
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            onFollow?.(profile.uid);
+                        }}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all active:scale-95"
+                        style={isFollowing ? {
+                            background: "var(--accent-bg)",
+                            color: "var(--text-light)",
+                            border: "1px solid var(--card-border)",
+                        } : {
+                            background: "var(--primary)",
+                            color: "#fff",
+                        }}
+                    >
+                        {isFollowing ? (
+                            <><UserCheck className="w-3.5 h-3.5" /> Following</>
+                        ) : (
+                            <><UserPlus className="w-3.5 h-3.5" /> Follow</>
+                        )}
+                    </button>
+                )}
+            </div>
         </div>
     );
 }

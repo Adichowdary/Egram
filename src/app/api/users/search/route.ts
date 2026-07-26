@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import connectMongo from "@/lib/mongodb";
 import User from "@/models/User";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
     try {
         await connectMongo();
@@ -10,20 +12,26 @@ export async function GET(req: Request) {
         const query = searchParams.get("q");
         const currentUserId = searchParams.get("uid");
 
-        if (!query) {
+        const trimmedQuery = query.trim();
+        if (!trimmedQuery) {
             return NextResponse.json([], { status: 200 });
         }
 
-        // Perform case-insensitive regex search on the "name" field
-        const searchRegex = new RegExp(query, "i");
+        // Safely escape special characters for regex searching
+        const escapedQuery = trimmedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const searchRegex = new RegExp(escapedQuery, "i");
 
-        const filter: any = { name: { $regex: searchRegex } };
+        const filter: any = {
+            $or: [
+                { name: { $regex: searchRegex } },
+                { email: { $regex: searchRegex } }
+            ]
+        };
 
-        // Allow searching for oneself by removing the $ne filter
-        // We will add an "It's You" badge on the frontend instead of completely hiding the user.
-        // if (currentUserId) { ... }
-
-        const users = await User.find(filter).limit(20);
+        const users = await User.find(filter)
+            .select("firebaseUid name email avatarUrl bio followersCount followingCount currentStreak")
+            .limit(25)
+            .lean();
 
         return NextResponse.json(users, { status: 200 });
 

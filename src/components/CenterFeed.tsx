@@ -3,6 +3,7 @@ import { User } from "firebase/auth";
 import { PostFeed } from "./PostFeed";
 import { collection, query, where, onSnapshot, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { motion } from "framer-motion";
 import Link from "next/link";
 
 interface CenterFeedProps {
@@ -92,7 +93,7 @@ export function CenterFeed({ user }: CenterFeedProps) {
         return () => {
             if (unsubscribeFn) unsubscribeFn();
         };
-    }, [user]);
+    }, [user?.uid]);
 
     const getInitials = (name: string | null) => {
         if (!name) return "U";
@@ -153,18 +154,30 @@ export function CenterFeed({ user }: CenterFeedProps) {
                 </div>
             </div>
 
-            <div className="flex gap-4 mb-6 px-1">
+            <div className="flex gap-4 mb-6 px-1 border-b border-zinc-800/30">
                 <button
                     onClick={() => setFeedType("global")}
-                    className={`pb-2 px-4 transition-all ${feedType === "global" ? "border-b-2 border-[var(--primary)] text-white font-bold" : "text-zinc-500 hover:text-zinc-300"}`}
+                    className={`relative pb-3 px-4 transition-colors ${feedType === "global" ? "text-white font-bold" : "text-zinc-500 hover:text-zinc-300"}`}
                 >
                     Explore
+                    {feedType === "global" && (
+                        <motion.div 
+                            layoutId="activeTab" 
+                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary)] shadow-[0_0_10px_rgba(0,149,246,0.5)]" 
+                        />
+                    )}
                 </button>
                 <button
                     onClick={() => setFeedType("following")}
-                    className={`pb-2 px-4 transition-all ${feedType === "following" ? "border-b-2 border-[var(--primary)] text-white font-bold" : "text-zinc-500 hover:text-zinc-300"}`}
+                    className={`relative pb-3 px-4 transition-colors ${feedType === "following" ? "text-white font-bold" : "text-zinc-500 hover:text-zinc-300"}`}
                 >
                     Following
+                    {feedType === "following" && (
+                        <motion.div 
+                            layoutId="activeTab" 
+                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary)] shadow-[0_0_10px_rgba(0,149,246,0.5)]" 
+                        />
+                    )}
                 </button>
             </div>
 

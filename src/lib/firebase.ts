@@ -3,10 +3,10 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-let app = null;
-let auth = null;
-let db = null;
-let storage = null;
+let app: any = null;
+let auth: any = null;
+let db: any = null;
+let storage: any = null;
 
 if (typeof window !== "undefined") {
   const firebaseConfig = {

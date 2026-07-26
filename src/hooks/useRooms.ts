@@ -13,9 +13,11 @@ export interface StudyRoom {
     createdAt: any;
 }
 
+let globalRoomsCache: StudyRoom[] | null = null;
+
 export function useRooms() {
-    const [rooms, setRooms] = useState<StudyRoom[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [rooms, setRooms] = useState<StudyRoom[]>(globalRoomsCache || []);
+    const [loading, setLoading] = useState(!globalRoomsCache);
 
     useEffect(() => {
         const q = query(collection(db, "rooms"), orderBy("createdAt", "desc"));
@@ -35,6 +37,7 @@ export function useRooms() {
                     createdAt: data.createdAt,
                 });
             });
+            globalRoomsCache = roomsData;
             setRooms(roomsData);
             setLoading(false);
         }, (error) => {

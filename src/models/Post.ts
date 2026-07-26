@@ -35,7 +35,8 @@ const PostSchema: Schema = new Schema(
     }
 );
 
-// Add index for faster feed queries (sorting by newest first)
+// Add indexes for faster feed queries (sorting by newest first)
 PostSchema.index({ createdAt: -1 });
+PostSchema.index({ author: 1, createdAt: -1 });
 
 export default mongoose.models.Post || mongoose.model<IPost>('Post', PostSchema);

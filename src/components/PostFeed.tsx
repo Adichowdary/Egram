@@ -3,11 +3,16 @@ import { collection, query, orderBy, onSnapshot, where } from "firebase/firestor
 import { db } from "@/lib/firebase";
 import { User } from "firebase/auth";
 import { PostSkeleton } from "./Skeletons";
-import { PostCard, Post } from "./PostCard";
+import { PostCard } from "./PostCard";
+import { Post } from "@/hooks/usePosts";
+
+let globalFeedCache: Post[] | null = null;
+let followingFeedCache: Post[] | null = null;
 
 export function PostFeed({ user, feedType = "global" }: { user: User, feedType?: "global" | "following" }) {
-    const [posts, setPosts] = useState<Post[]>([]);
-    const [loading, setLoading] = useState(true);
+    const initialCache = feedType === "following" ? followingFeedCache : globalFeedCache;
+    const [posts, setPosts] = useState<Post[]>(initialCache || []);
+    const [loading, setLoading] = useState(!initialCache);
     const [followingIds, setFollowingIds] = useState<string[]>([]);
 
     const getInitials = (name: string | null) => {
@@ -28,8 +33,12 @@ export function PostFeed({ user, feedType = "global" }: { user: User, feedType?:
 
     // 2. Fetch Posts based on feedType
     useEffect(() => {
+        const currentCache = feedType === "following" ? followingFeedCache : globalFeedCache;
+        if (!currentCache) {
+            setLoading(true);
+        }
+
         const fetchPosts = async (silent = false) => {
-            if (!silent) setLoading(true);
             try {
                 const url = feedType === "following"
                     ? `/api/posts?type=following&userId=${user.uid}`
@@ -49,16 +58,23 @@ export function PostFeed({ user, feedType = "global" }: { user: User, feedType?:
                         likes: p.likes || [],
                         commentsCount: p.comments?.length || 0,
                     }));
+
+                    if (feedType === "following") {
+                        followingFeedCache = formattedPosts;
+                    } else {
+                        globalFeedCache = formattedPosts;
+                    }
+
                     setPosts(formattedPosts);
                 }
             } catch (error) {
                 console.error("Feed fetch error:", error);
             } finally {
-                if (!silent) setLoading(false);
+                setLoading(false);
             }
         };
 
-        fetchPosts();
+        fetchPosts(!!currentCache);
 
         const handleNewPost = () => fetchPosts(true);
         window.addEventListener("postCreated", handleNewPost);
@@ -98,6 +114,7 @@ export function PostFeed({ user, feedType = "global" }: { user: User, feedType?:
                     post={post}
                     user={user}
                     getInitials={getInitials}
+                    onDelete={(deletedId) => setPosts(prev => prev.filter(p => p.id !== deletedId))}
                 />
             ))}
         </div>

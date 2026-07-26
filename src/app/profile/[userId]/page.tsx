@@ -1,20 +1,21 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut, updateProfile } from "firebase/auth";
 import { collection, query, where, orderBy, onSnapshot, doc, getDoc, updateDoc, setDoc, serverTimestamp, increment, writeBatch } from "firebase/firestore";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { auth, db, storage } from "@/lib/firebase";
 import { Sidebar } from "@/components/Sidebar";
 import { RightSidebar } from "@/components/RightSidebar";
-import { PostCard, Post } from "@/components/PostCard";
+import { PostCard } from "@/components/PostCard";
+import { Post } from "@/hooks/usePosts";
 import { PostSkeleton } from "@/components/Skeletons";
 import { AnimatePresence, motion } from "framer-motion";
 import { SplashScreen } from "@/components/SplashScreen";
 import { CreateMeetModal } from "@/components/CreateMeetModal";
 import { CreatePostModal } from "@/components/CreatePostModal";
-import { Camera, Info, Award, Plus, Edit3, Check, UserPlus, UserCheck } from "lucide-react";
+import { Camera, Info, Award, Plus, Edit3, Check, UserPlus, UserCheck, Share2 } from "lucide-react";
 import { CreateCertificateModal } from "@/components/CreateCertificateModal";
 import { CertificateCard, Certificate } from "@/components/CertificateCard";
 import { useToast } from "@/components/ToastProvider";
@@ -23,14 +24,14 @@ export default function UserProfilePage() {
     const params = useParams();
     const profileUserId = params.userId as string;
 
-    const [user, setUser] = useState<any>(null); // Current logged in user
+    const [user, setUser] = useState<any>(() => typeof window !== "undefined" && auth ? auth.currentUser : null); // Current logged in user
     const [profileData, setProfileData] = useState<any>(null); // User data of the profile being viewed
     const [posts, setPosts] = useState<Post[]>([]);
     const [certificates, setCertificates] = useState<Certificate[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(!(typeof window !== "undefined" && auth?.currentUser));
     const [loadingCertificates, setLoadingCertificates] = useState(true);
     const [isFollowing, setIsFollowing] = useState(false);
-
+    const router = useRouter();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
@@ -48,63 +49,78 @@ export default function UserProfilePage() {
 
     const isOwnProfile = user?.uid === profileUserId;
 
+    const fetchProfileAndPosts = async () => {
+        if (!profileUserId) return;
+        try {
+            // 1. Fetch Profile User Data (MongoDB)
+            const userRes = await fetch(`/api/users/${profileUserId}`);
+            if (userRes.ok) {
+                const data = await userRes.json();
+                setProfileData({ ...data, displayName: data.name, photoURL: data.avatarUrl });
+                setBioText(data.bio || "");
+                setNameText(data.name || "");
+            }
+
+            // 2. Fetch User's Posts (MongoDB)
+            const postsRes = await fetch(`/api/posts?authorId=${profileUserId}`);
+            if (postsRes.ok) {
+                const result = await postsRes.json();
+                const formattedPosts: Post[] = (result.data || []).map((p: any) => ({
+                    id: p._id,
+                    authorId: p.author?.firebaseUid || p.author,
+                    authorName: p.author?.name || "Anonymous",
+                    authorInitials: p.author?.name ? p.author.name.substring(0, 2).toUpperCase() : "U",
+                    content: p.content,
+                    mediaUrl: p.images?.[0],
+                    timestamp: { toDate: () => new Date(p.createdAt) },
+                    likes: p.likes || [],
+                    commentsCount: p.comments?.length || 0,
+                }));
+                setPosts(formattedPosts);
+            }
+        } catch (error) {
+            console.error("Error fetching profile and posts:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+        fetchProfileAndPosts();
+
+        // Certificates Firestore listener
+        let unsubscribeCerts: (() => void) | undefined;
+        if (profileUserId) {
+            const certsQuery = query(
+                collection(db, "certificates"),
+                where("userId", "==", profileUserId),
+                orderBy("timestamp", "desc")
+            );
+
+            unsubscribeCerts = onSnapshot(certsQuery, (snapshot) => {
+                const loadedCerts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Certificate));
+                setCertificates(loadedCerts);
+                setLoadingCertificates(false);
+            }, (error) => {
+                console.error("Certs fetch error:", error);
+                setLoadingCertificates(false);
+            });
+        }
+
+        const handleNewPost = () => fetchProfileAndPosts();
+        window.addEventListener("postCreated", handleNewPost);
+
+        return () => {
+            if (unsubscribeCerts) unsubscribeCerts();
+            window.removeEventListener("postCreated", handleNewPost);
+        };
+    }, [profileUserId]);
+
+    useEffect(() => {
+        const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
-
-                // 1. Fetch Profile User Data (MongoDB)
-                const fetchProfile = async () => {
-                    if (!profileUserId) return;
-                    try {
-                        const res = await fetch(`/api/users/${profileUserId}`, { cache: 'no-store' });
-                        if (res.ok) {
-                            const data = await res.json();
-                            // Map standard fields for backwards compatibility with components
-                            setProfileData({ ...data, displayName: data.name, photoURL: data.avatarUrl });
-                            if (isOwnProfile || !isEditingBio) {
-                                setBioText(data.bio || "");
-                            }
-                            if (isOwnProfile || !isEditingName) {
-                                setNameText(data.name || "");
-                            }
-                        } else {
-                            addToast("Profile not found", "error");
-                        }
-                    } catch (error) {
-                        console.error("Error fetching profile", error);
-                    }
-                };
-                fetchProfile();
-
-                // 2. Fetch Profile User's Posts
-                const postsQuery = query(
-                    collection(db, "posts"),
-                    where("authorId", "==", profileUserId),
-                );
-
-                const unsubscribePosts = onSnapshot(postsQuery, (snapshot) => {
-                    const postsData: Post[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Post));
-                    postsData.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-                    setPosts(postsData);
-                    setLoading(false);
-                });
-
-                // 3. Fetch Certificates
-                const certsQuery = query(
-                    collection(db, "certificates"),
-                    where("userId", "==", profileUserId),
-                    orderBy("timestamp", "desc")
-                );
-
-                const unsubscribeCerts = onSnapshot(certsQuery, (snapshot) => {
-                    const loadedCerts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Certificate));
-                    setCertificates(loadedCerts);
-                    setLoadingCertificates(false);
-                });
-
-                // 4. Check Following Status (if not own profile)
-                if (!isOwnProfile) {
+                if (currentUser.uid !== profileUserId) {
                     fetch(`/api/users/${currentUser.uid}`)
                         .then(res => res.json())
                         .then(data => {
@@ -114,24 +130,13 @@ export default function UserProfilePage() {
                         })
                         .catch(err => console.error(err));
                 }
-
-                // Safety timeout
-                setTimeout(() => {
-                    setLoading(false);
-                    setLoadingCertificates(false);
-                }, 2000);
-
-                return () => {
-                    unsubscribePosts();
-                    unsubscribeCerts();
-                };
             } else {
-                window.location.href = "/login";
+                router.push("/login");
             }
         });
 
         return () => unsubscribeAuth();
-    }, [profileUserId, isOwnProfile]);
+    }, [profileUserId, router]);
 
     const handleSignOut = async () => {
         await signOut(auth);
@@ -157,6 +162,7 @@ export default function UserProfilePage() {
             });
 
             setProfileData((prev: any) => ({ ...prev, photoURL: downloadURL }));
+            window.dispatchEvent(new Event("userProfileUpdated"));
 
             addToast("Profile picture updated!", "success");
         } catch (error: any) {
@@ -223,6 +229,7 @@ export default function UserProfilePage() {
                 }
 
                 setIsEditingName(false);
+                window.dispatchEvent(new Event("userProfileUpdated"));
                 addToast("Name updated professionally!", "success");
             } else {
                 if (res.status === 429) {
@@ -261,6 +268,27 @@ export default function UserProfilePage() {
             }
         } catch (error: any) {
             addToast("Failed to update follow status", "error");
+        }
+    };
+
+    const handleShareProfile = async () => {
+        const profileUrl = typeof window !== "undefined" ? window.location.href : "";
+        const name = profileData?.displayName || profileData?.email?.split('@')[0] || "User";
+        if (typeof navigator !== "undefined" && navigator.share) {
+            try {
+                await navigator.share({
+                    title: `${name}'s Profile on Egram`,
+                    text: `Connect with ${name} on Egram!`,
+                    url: profileUrl,
+                });
+                return;
+            } catch (err) {
+                // Share sheet cancelled or not supported
+            }
+        }
+        if (typeof navigator !== "undefined" && navigator.clipboard) {
+            await navigator.clipboard.writeText(profileUrl);
+            addToast("Profile link copied to clipboard!", "success");
         }
     };
 
@@ -356,18 +384,34 @@ export default function UserProfilePage() {
                                                         <Edit3 className="w-4 h-4" />
                                                     </button>
                                                 )}
+                                                <button
+                                                    onClick={handleShareProfile}
+                                                    className="p-2 text-zinc-400 hover:text-[var(--primary)] transition-all bg-white/5 hover:bg-white/10 rounded-lg flex-shrink-0"
+                                                    title="Share Profile Link"
+                                                >
+                                                    <Share2 className="w-4 h-4" />
+                                                </button>
                                             </div>
                                         )}
                                         {!isOwnProfile && (
-                                            <button
-                                                onClick={toggleFollow}
-                                                className={`px-8 sm:px-6 py-2.5 sm:py-2 w-full sm:w-auto rounded-xl text-sm sm:text-xs font-black transition-all transform active:scale-95 ${isFollowing
-                                                    ? "bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700"
-                                                    : "bg-[var(--primary)] text-white hover:opacity-90 shadow-xl shadow-purple-500/30"
-                                                    }`}
-                                            >
-                                                {isFollowing ? "Following" : "Follow"}
-                                            </button>
+                                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                                                <button
+                                                    onClick={toggleFollow}
+                                                    className={`px-6 py-2.5 sm:py-2 flex-1 sm:flex-none rounded-xl text-sm sm:text-xs font-black transition-all transform active:scale-95 ${isFollowing
+                                                        ? "bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700"
+                                                        : "bg-[var(--primary)] text-white hover:opacity-90 shadow-xl shadow-purple-500/30"
+                                                        }`}
+                                                >
+                                                    {isFollowing ? "Following" : "Follow"}
+                                                </button>
+                                                <button
+                                                    onClick={handleShareProfile}
+                                                    className="p-2.5 sm:p-2 text-zinc-300 hover:text-[var(--primary)] transition-all bg-white/10 rounded-xl flex-shrink-0"
+                                                    title="Share Profile"
+                                                >
+                                                    <Share2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
 

@@ -14,19 +14,45 @@ interface SidebarProps {
     getInitials: (name: string | null) => string;
 }
 
+import { motion } from "framer-motion";
+import { usePathname } from "next/navigation";
+
+const sidebarAvatarCache = new Map<string, string>();
+
 export function Sidebar({ user, setIsModalOpen, setIsPostModalOpen, getInitials }: SidebarProps) {
     const { theme, setTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+    const pathname = usePathname();
 
     // Call streak hook to register login and maintain daily streak
     useStreak(user);
 
+    const [userPhoto, setUserPhoto] = useState<string | null>(() => user?.uid ? sidebarAvatarCache.get(user.uid) || user?.photoURL || null : user?.photoURL || null);
+
+    const fetchSidebarProfile = async () => {
+        if (!user?.uid) return;
+        try {
+            const res = await fetch(`/api/users/${user.uid}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.avatarUrl) {
+                    sidebarAvatarCache.set(user.uid, data.avatarUrl);
+                    setUserPhoto(data.avatarUrl);
+                }
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
     useEffect(() => {
         setMounted(true);
         if (user) {
-            // Fetch unread count initially
+            setUserPhoto(user.photoURL || null);
+            fetchSidebarProfile();
+
             fetch(`/api/notifications/${user.uid}`)
                 .then(res => res.json())
                 .then(data => {
@@ -37,63 +63,95 @@ export function Sidebar({ user, setIsModalOpen, setIsPostModalOpen, getInitials 
                 })
                 .catch(err => console.error(err));
         }
-    }, [user]);
+
+        const handleUpdate = () => fetchSidebarProfile();
+        window.addEventListener("userProfileUpdated", handleUpdate);
+        return () => window.removeEventListener("userProfileUpdated", handleUpdate);
+    }, [user?.uid]);
+
+    const navItems = [
+        { href: "/", icon: <Home />, label: "Home" },
+        { href: "/search", icon: <Search />, label: "Search" },
+        { href: "/explore", icon: <Compass />, label: "Explore Rooms" },
+        { href: "/messages", icon: <MessageSquare />, label: "Messages" },
+    ];
 
     return (
         <aside className="sidebar glass">
-            <div className="nav-brand text-[var(--text-dark)]">Egram.</div>
+            <div className="nav-brand text-[var(--text-dark)] select-none">Egram.</div>
 
             <ul className="nav-links">
-                <Link href="/">
-                    <li className="active"><Home /> <span>Home</span></li>
-                </Link>
-                <Link href="/search">
-                    <li><Search /> <span>Search</span></li>
-                </Link>
-                <Link href="/explore">
-                    <li><Compass /> <span>Explore Rooms</span></li>
-                </Link>
+                {navItems.map((item) => (
+                    <Link href={item.href} key={item.href}>
+                        <motion.li 
+                            whileHover={{ scale: 1.02, x: 5 }}
+                            whileTap={{ scale: 0.98 }}
+                            className={pathname === item.href ? "active" : ""}
+                        >
+                            {item.icon} <span>{item.label}</span>
+                        </motion.li>
+                    </Link>
+                ))}
 
-                <li onClick={() => { setIsNotificationsOpen(true); setUnreadCount(0); }} className="cursor-pointer relative">
+                <motion.li 
+                    whileHover={{ scale: 1.02, x: 5 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => { setIsNotificationsOpen(true); setUnreadCount(0); }} 
+                    className="cursor-pointer relative"
+                >
                     <Bell /> <span>Notifications</span>
                     {unreadCount > 0 && (
                         <div className="absolute top-2 left-6 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white border-2 border-[var(--card-bg)]">
                             {unreadCount}
                         </div>
                     )}
-                </li>
+                </motion.li>
 
-                <Link href="/messages">
-                    <li><MessageSquare /> <span>Messages</span></li>
-                </Link>
-
-                <li onClick={() => setIsPostModalOpen?.(true)} className="cursor-pointer">
+                <motion.li 
+                    whileHover={{ scale: 1.02, x: 5 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setIsPostModalOpen?.(true)} 
+                    className="cursor-pointer"
+                >
                     <PlusSquare /> <span>Create Post</span>
-                </li>
-                <li onClick={() => setIsModalOpen(true)} className="cursor-pointer">
+                </motion.li>
+                
+                <motion.li 
+                    whileHover={{ scale: 1.02, x: 5 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setIsModalOpen(true)} 
+                    className="cursor-pointer"
+                >
                     <Video /> <span>Create Meet</span>
-                </li>
+                </motion.li>
 
                 <Link href={`/profile/${user.uid}`}>
-                    <li>
+                    <motion.li 
+                        whileHover={{ scale: 1.02, x: 5 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={pathname.includes(`/profile/${user.uid}`) ? "active" : ""}
+                    >
                         <div className="avatar-small">
-                            {user.photoURL ? (
-                                <img src={user.photoURL} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                            {userPhoto || user.photoURL ? (
+                                <img src={userPhoto || user.photoURL || ""} alt="Avatar" className="w-full h-full rounded-full object-cover" />
                             ) : (
                                 getInitials(user.displayName || user.email)
                             )}
                         </div>
                         <span>Profile</span>
-                    </li>
+                    </motion.li>
                 </Link>
             </ul>
 
-            <button
+            <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 className="icon-btn mt-auto flex items-center gap-4 p-4 text-left w-full hover:bg-[var(--card-border)] rounded-lg transition-colors"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                aria-label="Toggle theme"
             >
                 {mounted && theme === "dark" ? <Sun /> : <Moon />} <span>Theme</span>
-            </button>
+            </motion.button>
 
             <NotificationsPanel
                 isOpen={isNotificationsOpen}
