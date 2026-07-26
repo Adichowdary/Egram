@@ -11,7 +11,7 @@ import { CreatePostModal } from "@/components/CreatePostModal";
 import { SplashScreen } from "@/components/SplashScreen";
 import { useToast } from "@/components/ToastProvider";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Plus, Check, MessageSquare, Sparkles, Search, ShieldCheck } from "lucide-react";
+import { Users, Plus, Check, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Circle {
@@ -31,65 +31,36 @@ export default function CirclesPage() {
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [activeCategory, setActiveCategory] = useState("All");
+    const [circles, setCircles] = useState<Circle[]>([]);
 
     const router = useRouter();
     const { addToast } = useToast();
 
-    const initialCircles: Circle[] = [
-        {
-            id: "1",
-            name: "CSE & Software Engineering",
-            description: "Data Structures, Algorithms, System Design & Coding Prep.",
-            category: "Computer Science",
-            icon: "💻",
-            membersCount: 1420,
-            isJoined: true,
-        },
-        {
-            id: "2",
-            name: "Cybersecurity & Ethical Hacking",
-            description: "CTF challenges, Penetration Testing, Network Security.",
-            category: "Security",
-            icon: "🛡️",
-            membersCount: 890,
-            isJoined: false,
-        },
-        {
-            id: "3",
-            name: "GATE & Placement Exam Prep",
-            description: "Mock tests, aptitude questions, interview experiences.",
-            category: "Exams",
-            icon: "📝",
-            membersCount: 2100,
-            isJoined: true,
-        },
-        {
-            id: "4",
-            name: "Python & Machine Learning",
-            description: "Neural networks, PyTorch, pandas & open-source ML projects.",
-            category: "AI & ML",
-            icon: "🤖",
-            membersCount: 1650,
-            isJoined: false,
-        },
-        {
-            id: "5",
-            name: "College General Network",
-            description: "Campus updates, hackathons, sports & inter-college events.",
-            category: "Campus",
-            icon: "🎓",
-            membersCount: 3400,
-            isJoined: false,
-        },
-    ];
-
-    const [circles, setCircles] = useState<Circle[]>(initialCircles);
-
     useEffect(() => {
-        const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+        const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
-                setLoading(false);
+                try {
+                    // Query real groups/circles from DB
+                    const res = await fetch(`/api/groups`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        const realGroups = (data.groups || []).map((g: any) => ({
+                            id: g._id || g.id,
+                            name: g.name,
+                            description: g.description || "Student community & discussion group",
+                            category: g.category || "General",
+                            icon: "🎓",
+                            membersCount: g.members?.length || 1,
+                            isJoined: g.members?.includes(currentUser.uid) || false
+                        }));
+                        setCircles(realGroups);
+                    }
+                } catch (e) {
+                    console.error("Error fetching real groups:", e);
+                } finally {
+                    setLoading(false);
+                }
             } else {
                 router.push("/login");
             }
@@ -97,7 +68,8 @@ export default function CirclesPage() {
         return () => unsubscribeAuth();
     }, [router]);
 
-    const toggleJoinCircle = (circleId: string) => {
+    const toggleJoinCircle = async (circleId: string) => {
+        if (!user) return;
         setCircles((prev) =>
             prev.map((c) => {
                 if (c.id === circleId) {
@@ -194,7 +166,7 @@ export default function CirclesPage() {
                                     <div className="text-center py-16 rounded-3xl border border-dashed border-[var(--card-border)] bg-[var(--accent-bg)]">
                                         <Users className="w-10 h-10 mx-auto text-zinc-500 opacity-40 mb-2" />
                                         <p className="text-sm font-bold">No circles found</p>
-                                        <p className="text-xs text-[var(--text-light)]">Try adjusting your search query or category.</p>
+                                        <p className="text-xs text-[var(--text-light)]">No student communities created yet.</p>
                                     </div>
                                 ) : (
                                     filteredCircles.map((circle) => (

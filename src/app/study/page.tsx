@@ -14,6 +14,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Play, Pause, RotateCcw, Flame, Trophy, Clock, CheckCircle2, BookOpen, Sparkles, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+interface LeaderboardUser {
+    rank: number;
+    name: string;
+    college: string;
+    hours: string;
+    streak: number;
+}
+
 export default function StudyPage() {
     const [user, setUser] = useState<any>(() => typeof window !== "undefined" && auth ? auth.currentUser : null);
     const [loading, setLoading] = useState(!(typeof window !== "undefined" && auth?.currentUser));
@@ -24,20 +32,32 @@ export default function StudyPage() {
     const [mode, setMode] = useState<"focus" | "break">("focus");
     const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes default
     const [isRunning, setIsRunning] = useState(false);
-    const [completedSessions, setCompletedSessions] = useState(3);
-    const [todayMinutes, setTodayMinutes] = useState(75);
-    const [weeklyMinutes, setWeeklyMinutes] = useState(340);
-    const [currentStreak, setCurrentStreak] = useState(5);
-    const [topic, setTopic] = useState("Data Structures & Algorithms");
+    const [completedSessions, setCompletedSessions] = useState(0);
+    const [todayMinutes, setTodayMinutes] = useState(0);
+    const [weeklyMinutes, setWeeklyMinutes] = useState(0);
+    const [currentStreak, setCurrentStreak] = useState(0);
+    const [topic, setTopic] = useState("General Study Focus");
+    const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
 
     const router = useRouter();
     const { addToast } = useToast();
 
     useEffect(() => {
-        const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+        const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
-                setLoading(false);
+                try {
+                    // Fetch real user streak & study stats from database
+                    const res = await fetch(`/api/users/${currentUser.uid}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        setCurrentStreak(data.currentStreak || 0);
+                    }
+                } catch (e) {
+                    console.error(e);
+                } finally {
+                    setLoading(false);
+                }
             } else {
                 router.push("/login");
             }
@@ -91,13 +111,6 @@ export default function StudyPage() {
         if (!name) return "U";
         return name.substring(0, 2).toUpperCase();
     };
-
-    const leaderboard = [
-        { rank: 1, name: "Aarav Sharma", college: "IIT Bombay", hours: "42.5 hrs", streak: 14 },
-        { rank: 2, name: "Sneha Patel", college: "BITS Pilani", hours: "38.0 hrs", streak: 11 },
-        { rank: 3, name: "Rohan Gupta", college: "VIT Vellore", hours: "35.2 hrs", streak: 9 },
-        { rank: 4, name: "Ananya Iyer", college: "DTU Delhi", hours: "31.8 hrs", streak: 7 },
-    ];
 
     return (
         <>
@@ -228,29 +241,37 @@ export default function StudyPage() {
                                     </span>
                                 </div>
 
-                                <div className="space-y-3">
-                                    {leaderboard.map((item) => (
-                                        <div key={item.rank} className="flex items-center justify-between p-3 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)]">
-                                            <div className="flex items-center gap-3">
-                                                <span className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs ${
-                                                    item.rank === 1 ? "bg-amber-500 text-black" :
-                                                    item.rank === 2 ? "bg-zinc-300 text-black" :
-                                                    item.rank === 3 ? "bg-amber-700 text-white" : "bg-zinc-800 text-zinc-400"
-                                                }`}>
-                                                    #{item.rank}
-                                                </span>
-                                                <div>
-                                                    <p className="text-xs font-black">{item.name}</p>
-                                                    <p className="text-[10px] text-[var(--text-light)] font-bold">{item.college}</p>
+                                {leaderboard.length === 0 ? (
+                                    <div className="text-center py-10 rounded-2xl border border-dashed border-[var(--card-border)] bg-[var(--accent-bg)]">
+                                        <Trophy className="w-8 h-8 mx-auto text-zinc-500 opacity-40 mb-1" />
+                                        <p className="text-xs font-bold text-zinc-400">No study rankings yet.</p>
+                                        <p className="text-[11px] text-[var(--text-light)]">Start a focus session to rank on the leaderboard!</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {leaderboard.map((item) => (
+                                            <div key={item.rank} className="flex items-center justify-between p-3 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)]">
+                                                <div className="flex items-center gap-3">
+                                                    <span className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs ${
+                                                        item.rank === 1 ? "bg-amber-500 text-black" :
+                                                        item.rank === 2 ? "bg-zinc-300 text-black" :
+                                                        item.rank === 3 ? "bg-amber-700 text-white" : "bg-zinc-800 text-zinc-400"
+                                                    }`}>
+                                                        #{item.rank}
+                                                    </span>
+                                                    <div>
+                                                        <p className="text-xs font-black">{item.name}</p>
+                                                        <p className="text-[10px] text-[var(--text-light)] font-bold">{item.college}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-xs font-black text-[var(--primary)]">{item.hours}</p>
+                                                    <p className="text-[10px] text-orange-500 font-bold">🔥 {item.streak}d streak</p>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="text-xs font-black text-[var(--primary)]">{item.hours}</p>
-                                                <p className="text-[10px] text-orange-500 font-bold">🔥 {item.streak}d streak</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                         </div>

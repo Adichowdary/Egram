@@ -132,9 +132,16 @@ export default function DiscoverPage() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    {trendingLearners.map((profile) => (
-                                        <UserCard key={profile.uid} profile={profile} />
-                                    ))}
+                                    {trendingLearners.length === 0 ? (
+                                        <div className="text-center py-10 rounded-2xl border border-dashed border-[var(--card-border)] bg-[var(--accent-bg)] text-xs text-zinc-400 font-bold">
+                                            <Users className="w-8 h-8 mx-auto text-zinc-500 opacity-40 mb-1" />
+                                            <span>No students to discover yet. Invite your friends!</span>
+                                        </div>
+                                    ) : (
+                                        trendingLearners.map((profile) => (
+                                            <UserCard key={profile.uid} profile={profile} />
+                                        ))
+                                    )}
                                 </div>
                             </div>
 
