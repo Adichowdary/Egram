@@ -10,6 +10,7 @@ import { CreateMeetModal } from "@/components/CreateMeetModal";
 import { CreateGroupModal } from "@/components/CreateGroupModal";
 import { CreatePostModal } from "@/components/CreatePostModal";
 import { GroupInfoModal } from "@/components/GroupInfoModal";
+import { MobileNav } from "@/components/MobileNav";
 import { Send, User as UserIcon, MessageSquare, ImageIcon, Clock, Users, Plus, Info, Camera, Paperclip, FileText, MoreVertical, Trash } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -826,6 +827,8 @@ export default function MessagesPage() {
                 getInitials={getInitials}
                 conversations={conversations}
             />
+
+            <MobileNav onOpenCreatePost={() => setIsPostModalOpen(true)} onOpenCreateMeet={() => setIsModalOpen(true)} currentUserId={user?.uid} />
         </div>
     );
 }

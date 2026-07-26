@@ -72,7 +72,7 @@ export default function Home() {
               />
             </main>
 
-            <MobileNav onOpenCreatePost={() => setIsPostModalOpen(true)} currentUserId={user.uid} />
+            <MobileNav onOpenCreatePost={() => setIsPostModalOpen(true)} onOpenCreateMeet={() => setIsModalOpen(true)} currentUserId={user.uid} />
 
             <CreateMeetModal
               isOpen={isModalOpen}

@@ -6,6 +6,7 @@ import { auth } from "@/lib/firebase";
 import { Sidebar } from "@/components/Sidebar";
 import { CreatePostModal } from "@/components/CreatePostModal";
 import { CreateMeetModal } from "@/components/CreateMeetModal";
+import { MobileNav } from "@/components/MobileNav";
 import { useRooms } from "@/hooks/useRooms";
 import { Compass, Video, Calendar, User, Search, Loader2 } from "lucide-react";
 
@@ -155,6 +156,8 @@ export default function ExplorePage() {
                 onClose={() => setIsPostModalOpen(false)}
                 user={user}
             />
+
+            <MobileNav onOpenCreatePost={() => setIsPostModalOpen(true)} onOpenCreateMeet={() => setIsModalOpen(true)} currentUserId={user?.uid} />
         </div>
     );
 }

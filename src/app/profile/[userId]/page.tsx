@@ -15,6 +15,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { SplashScreen } from "@/components/SplashScreen";
 import { CreateMeetModal } from "@/components/CreateMeetModal";
 import { CreatePostModal } from "@/components/CreatePostModal";
+import { MobileNav } from "@/components/MobileNav";
 import { Camera, Info, Award, Plus, Edit3, Check, UserPlus, UserCheck, Share2 } from "lucide-react";
 import { CreateCertificateModal } from "@/components/CreateCertificateModal";
 import { CertificateCard, Certificate } from "@/components/CertificateCard";
@@ -623,6 +624,8 @@ export default function UserProfilePage() {
                             />
                         </>
                     )}
+
+                    <MobileNav onOpenCreatePost={() => setIsPostModalOpen(true)} onOpenCreateMeet={() => setIsModalOpen(true)} currentUserId={user?.uid} />
                 </main>
             )}
         </>

@@ -8,6 +8,7 @@ import { RightSidebar } from "@/components/RightSidebar";
 import { UserCard } from "@/components/UserCard";
 import { CreateMeetModal } from "@/components/CreateMeetModal";
 import { CreatePostModal } from "@/components/CreatePostModal";
+import { MobileNav } from "@/components/MobileNav";
 import { Search as SearchIcon, Users, Loader2, Sparkles, TrendingUp } from "lucide-react";
 import { useToast } from "@/components/ToastProvider";
 import { motion, AnimatePresence } from "framer-motion";
@@ -334,6 +335,8 @@ export default function SearchPage() {
                             getInitials={getInitials}
                         />
                     </main>
+
+                    <MobileNav onOpenCreatePost={() => setIsPostModalOpen(true)} onOpenCreateMeet={() => setIsModalOpen(true)} currentUserId={user.uid} />
 
                     <CreateMeetModal
                         isOpen={isModalOpen}

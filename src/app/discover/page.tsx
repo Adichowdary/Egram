@@ -149,7 +149,7 @@ export default function DiscoverPage() {
                     </main>
 
                     <RightSidebar user={user} handleSignOut={() => auth.signOut()} getInitials={getInitials} />
-                    <MobileNav onOpenCreatePost={() => setIsPostModalOpen(true)} currentUserId={user.uid} />
+                    <MobileNav onOpenCreatePost={() => setIsPostModalOpen(true)} onOpenCreateMeet={() => setIsModalOpen(true)} currentUserId={user.uid} />
 
                     <CreateMeetModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} user={user} getInitials={getInitials} />
                     <CreatePostModal isOpen={isPostModalOpen} onClose={() => setIsPostModalOpen(false)} user={user} />
