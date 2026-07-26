@@ -58,12 +58,20 @@ export default function LoginPage() {
         }
     };
 
+    const getTargetRedirect = () => {
+        if (typeof window !== "undefined") {
+            const params = new URLSearchParams(window.location.search);
+            return params.get("redirect") || "/";
+        }
+        return "/";
+    };
+
     useEffect(() => {
         if (typeof window !== "undefined" && auth) {
             getRedirectResult(auth).then(async (result) => {
                 if (result?.user) {
                     await saveUserToFirestore(result.user);
-                    router.push("/");
+                    router.push(getTargetRedirect());
                 }
             }).catch(err => console.error("Redirect auth error:", err));
         }
@@ -71,7 +79,7 @@ export default function LoginPage() {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             if (currentUser) {
                 setInitialLoading(false);
-                router.push("/");
+                router.push(getTargetRedirect());
             } else {
                 setInitialLoading(false);
             }

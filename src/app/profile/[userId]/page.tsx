@@ -50,7 +50,10 @@ export default function UserProfilePage() {
     const isOwnProfile = user?.uid === profileUserId;
 
     const fetchProfileAndPosts = async () => {
-        if (!profileUserId) return;
+        if (!profileUserId) {
+            setLoading(false);
+            return;
+        }
         try {
             // 1. Fetch Profile User Data (MongoDB)
             const userRes = await fetch(`/api/users/${profileUserId}`);
@@ -86,6 +89,9 @@ export default function UserProfilePage() {
     };
 
     useEffect(() => {
+        // Fallback safety timer so screen never hangs on loading
+        const safetyTimer = setTimeout(() => setLoading(false), 2500);
+
         fetchProfileAndPosts();
 
         // Certificates Firestore listener
@@ -111,6 +117,7 @@ export default function UserProfilePage() {
         window.addEventListener("postCreated", handleNewPost);
 
         return () => {
+            clearTimeout(safetyTimer);
             if (unsubscribeCerts) unsubscribeCerts();
             window.removeEventListener("postCreated", handleNewPost);
         };
@@ -131,7 +138,7 @@ export default function UserProfilePage() {
                         .catch(err => console.error(err));
                 }
             } else {
-                router.push("/login");
+                router.push(`/login?redirect=/profile/${profileUserId}`);
             }
         });
 
@@ -262,7 +269,7 @@ export default function UserProfilePage() {
                     ...prev,
                     followersCount: prev.followersCount + (data.isFollowing ? 1 : -1)
                 }));
-                addToast(data.isFollowing ? "Following" : "Unfollowed", "success");
+                addToast(data.isFollowing ? "Following! Friend notified." : "Unfollowed", "success");
             } else {
                 addToast("Failed to update follow status", "error");
             }
@@ -272,13 +279,13 @@ export default function UserProfilePage() {
     };
 
     const handleShareProfile = async () => {
-        const profileUrl = typeof window !== "undefined" ? window.location.href : "";
+        const profileUrl = typeof window !== "undefined" ? `${window.location.origin}/profile/${profileUserId}` : "";
         const name = profileData?.displayName || profileData?.email?.split('@')[0] || "User";
         if (typeof navigator !== "undefined" && navigator.share) {
             try {
                 await navigator.share({
                     title: `${name}'s Profile on Egram`,
-                    text: `Connect with ${name} on Egram!`,
+                    text: `Check out ${name}'s profile on Egram!`,
                     url: profileUrl,
                 });
                 return;

@@ -10,19 +10,43 @@ export default function ProfileRedirect() {
     const router = useRouter();
 
     useEffect(() => {
+        let isResolved = false;
+
+        // Safety fallback timer so loading never hangs indefinitely
+        const safetyTimer = setTimeout(() => {
+            if (!isResolved) {
+                isResolved = true;
+                if (auth?.currentUser) {
+                    router.replace(`/profile/${auth.currentUser.uid}`);
+                } else {
+                    router.replace("/login");
+                }
+            }
+        }, 2000);
+
         if (typeof window !== "undefined" && auth?.currentUser) {
+            isResolved = true;
+            clearTimeout(safetyTimer);
             router.replace(`/profile/${auth.currentUser.uid}`);
             return;
         }
 
         const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                router.replace(`/profile/${user.uid}`);
-            } else {
-                router.replace("/login");
+            if (!isResolved) {
+                isResolved = true;
+                clearTimeout(safetyTimer);
+                if (user) {
+                    router.replace(`/profile/${user.uid}`);
+                } else {
+                    router.replace("/login");
+                }
             }
         });
-        return () => unsubscribe();
+
+        return () => {
+            clearTimeout(safetyTimer);
+            unsubscribe();
+        };
     }, [router]);
 
     return <SplashScreen />;

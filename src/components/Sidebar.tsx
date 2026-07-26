@@ -47,26 +47,36 @@ export function Sidebar({ user, setIsModalOpen, setIsPostModalOpen, getInitials 
         }
     };
 
+    const checkUnreadNotifications = () => {
+        if (!user?.uid) return;
+        fetch(`/api/notifications/${user.uid}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.notifications) {
+                    const unread = data.notifications.filter((n: any) => !n.isRead).length;
+                    setUnreadCount(unread);
+                }
+            })
+            .catch(err => console.error(err));
+    };
+
     useEffect(() => {
         setMounted(true);
         if (user) {
             setUserPhoto(user.photoURL || null);
             fetchSidebarProfile();
-
-            fetch(`/api/notifications/${user.uid}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.notifications) {
-                        const unread = data.notifications.filter((n: any) => !n.isRead).length;
-                        setUnreadCount(unread);
-                    }
-                })
-                .catch(err => console.error(err));
+            checkUnreadNotifications();
         }
+
+        const pollInterval = setInterval(checkUnreadNotifications, 6000);
 
         const handleUpdate = () => fetchSidebarProfile();
         window.addEventListener("userProfileUpdated", handleUpdate);
-        return () => window.removeEventListener("userProfileUpdated", handleUpdate);
+
+        return () => {
+            clearInterval(pollInterval);
+            window.removeEventListener("userProfileUpdated", handleUpdate);
+        };
     }, [user?.uid]);
 
     const navItems = [
