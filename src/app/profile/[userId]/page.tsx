@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { onAuthStateChanged, signOut, updateProfile } from "firebase/auth";
 import { collection, query, where, orderBy, onSnapshot, doc, getDoc, updateDoc, setDoc, serverTimestamp, increment, writeBatch } from "firebase/firestore";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -20,9 +20,11 @@ import { Camera, Info, Award, Plus, Edit3, Check, UserPlus, UserCheck, Share2 } 
 import { CreateCertificateModal } from "@/components/CreateCertificateModal";
 import { CertificateCard, Certificate } from "@/components/CertificateCard";
 import { useToast } from "@/components/ToastProvider";
+import { FollowListModal } from "@/components/FollowListModal";
 
 export default function UserProfilePage() {
     const params = useParams();
+    const searchParams = useSearchParams();
     const profileUserId = params.userId as string;
 
     const [user, setUser] = useState<any>(() => typeof window !== "undefined" && auth ? auth.currentUser : null); // Current logged in user
@@ -33,6 +35,17 @@ export default function UserProfilePage() {
     const [loadingCertificates, setLoadingCertificates] = useState(true);
     const [isFollowing, setIsFollowing] = useState(false);
     const router = useRouter();
+
+    const [isFollowListOpen, setIsFollowListOpen] = useState(false);
+    const [followListTab, setFollowListTab] = useState<"followers" | "following">("followers");
+
+    useEffect(() => {
+        const tab = searchParams.get("tab");
+        if (tab === "followers" || tab === "following") {
+            setFollowListTab(tab);
+            setIsFollowListOpen(true);
+        }
+    }, [searchParams]);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
@@ -429,15 +442,27 @@ export default function UserProfilePage() {
                                             <p className="text-[10px] text-[var(--text-light)] uppercase tracking-widest mt-1 font-bold">Posts</p>
                                         </div>
                                         <div className="w-[1px] bg-[var(--card-border)] my-1"></div>
-                                        <div className="flex-1">
-                                            <p className="text-lg font-black text-[var(--text-dark)] leading-none">{profileData?.followersCount || 0}</p>
+                                        <button
+                                            onClick={() => {
+                                                setFollowListTab("followers");
+                                                setIsFollowListOpen(true);
+                                            }}
+                                            className="flex-1 hover:opacity-80 transition-opacity cursor-pointer group"
+                                        >
+                                            <p className="text-lg font-black text-[var(--text-dark)] group-hover:text-[var(--primary)] leading-none transition-colors">{profileData?.followersCount || 0}</p>
                                             <p className="text-[10px] text-[var(--text-light)] uppercase tracking-widest mt-1 font-bold">Followers</p>
-                                        </div>
+                                        </button>
                                         <div className="w-[1px] bg-[var(--card-border)] my-1"></div>
-                                        <div className="flex-1">
-                                            <p className="text-lg font-black text-[var(--text-dark)] leading-none">{profileData?.followingCount || 0}</p>
+                                        <button
+                                            onClick={() => {
+                                                setFollowListTab("following");
+                                                setIsFollowListOpen(true);
+                                            }}
+                                            className="flex-1 hover:opacity-80 transition-opacity cursor-pointer group"
+                                        >
+                                            <p className="text-lg font-black text-[var(--text-dark)] group-hover:text-[var(--primary)] leading-none transition-colors">{profileData?.followingCount || 0}</p>
                                             <p className="text-[10px] text-[var(--text-light)] uppercase tracking-widest mt-1 font-bold">Following</p>
-                                        </div>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -626,6 +651,16 @@ export default function UserProfilePage() {
                     )}
 
                     <MobileNav onOpenCreatePost={() => setIsPostModalOpen(true)} onOpenCreateMeet={() => setIsModalOpen(true)} currentUserId={user?.uid} />
+
+                    <FollowListModal
+                        isOpen={isFollowListOpen}
+                        onClose={() => setIsFollowListOpen(false)}
+                        targetUserId={profileUserId}
+                        targetUserName={profileData?.displayName || profileData?.name || "User"}
+                        currentUserId={user?.uid || null}
+                        initialTab={followListTab}
+                        onFollowChange={() => fetchProfileAndPosts()}
+                    />
                 </main>
             )}
         </>

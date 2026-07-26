@@ -1,17 +1,19 @@
 import { NextResponse } from "next/server";
 import connectMongo from "@/lib/mongodb";
 import User from "@/models/User";
+import Follower from "@/models/Follower";
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request, { params }: { params: Promise<{ userId: string }> }) {
+    let userId = "";
     try {
+        userId = (await params).userId;
         const db = await connectMongo();
-        const userId = (await params).userId;
 
-        if (!db) {
+        if (!db || !userId) {
             return NextResponse.json({
-                firebaseUid: userId,
+                firebaseUid: userId || "unknown",
                 name: "Student",
                 bio: "",
                 avatarUrl: "",
@@ -21,7 +23,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ userId: 
             }, { status: 200 });
         }
 
-        const user = await User.findOne({ firebaseUid: userId }).lean();
+        let user = await User.findOne({ firebaseUid: userId }).lean();
 
         if (!user) {
             return NextResponse.json({
@@ -35,12 +37,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ userId: 
             }, { status: 200 });
         }
 
-        return NextResponse.json(user, { status: 200 });
+        // Live count verification from Follower collection
+        const liveFollowersCount = await Follower.countDocuments({ followingId: userId });
+        const liveFollowingCount = await Follower.countDocuments({ followerId: userId });
+
+        return NextResponse.json({
+            ...user,
+            followersCount: liveFollowersCount,
+            followingCount: liveFollowingCount
+        }, { status: 200 });
 
     } catch (error: any) {
         console.error("Error fetching user:", error);
         return NextResponse.json({
-            firebaseUid: (await params).userId,
+            firebaseUid: userId || "unknown",
             name: "Student",
             bio: "",
             avatarUrl: "",

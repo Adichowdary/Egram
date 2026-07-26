@@ -7,11 +7,15 @@ import Notification from "@/models/Notification";
 export async function POST(req: Request, { params }: { params: Promise<{ userId: string }> }) {
     try {
         const db = await connectMongo();
-        const targetUserId = (await params).userId;
+        const { userId: targetUserId } = await params;
         const { followerId } = await req.json();
 
         if (!followerId || !targetUserId) {
             return NextResponse.json({ error: "Missing user IDs" }, { status: 400 });
+        }
+
+        if (followerId === targetUserId) {
+            return NextResponse.json({ error: "Cannot follow yourself" }, { status: 400 });
         }
 
         if (!db) {
@@ -29,32 +33,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
         }
 
         const followRecord = await Follower.findOne({ followerId, followingId: targetUserId });
-        const isFollowing = !!followRecord;
+        const isCurrentlyFollowing = !!followRecord;
+        let newIsFollowing = false;
 
-        if (isFollowing) {
+        if (isCurrentlyFollowing) {
             await Follower.deleteOne({ _id: followRecord._id });
-
-            await User.updateOne({ firebaseUid: followerId }, {
-                $pull: { following: targetUserId },
-                $inc: { followingCount: -1 }
-            });
-            await User.updateOne({ firebaseUid: targetUserId }, {
-                $pull: { followers: followerId },
-                $inc: { followersCount: -1 }
-            });
-
-            return NextResponse.json({ message: "Unfollowed successfully", isFollowing: false }, { status: 200 });
+            newIsFollowing = false;
         } else {
             await Follower.create({ followerId, followingId: targetUserId });
-
-            await User.updateOne({ firebaseUid: followerId }, {
-                $addToSet: { following: targetUserId },
-                $inc: { followingCount: 1 }
-            });
-            await User.updateOne({ firebaseUid: targetUserId }, {
-                $addToSet: { followers: followerId },
-                $inc: { followersCount: 1 }
-            });
+            newIsFollowing = true;
 
             try {
                 await Notification.create({
@@ -64,11 +51,33 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
                     message: `${follower.name} started following you.`
                 });
             } catch (notifErr) {
-                console.error("Notification creation error:", notifErr);
+                // Ignore notification error
             }
-
-            return NextResponse.json({ message: "Followed successfully", isFollowing: true }, { status: 200 });
         }
+
+        // Recalculate exact database counts for both users
+        const targetFollowersCount = await Follower.countDocuments({ followingId: targetUserId });
+        const targetFollowingCount = await Follower.countDocuments({ followerId: targetUserId });
+
+        const followerFollowersCount = await Follower.countDocuments({ followingId: followerId });
+        const followerFollowingCount = await Follower.countDocuments({ followerId: followerId });
+
+        await User.updateOne({ firebaseUid: targetUserId }, {
+            $set: { followersCount: targetFollowersCount, followingCount: targetFollowingCount },
+            [newIsFollowing ? "$addToSet" : "$pull"]: { followers: followerId }
+        });
+
+        await User.updateOne({ firebaseUid: followerId }, {
+            $set: { followersCount: followerFollowersCount, followingCount: followerFollowingCount },
+            [newIsFollowing ? "$addToSet" : "$pull"]: { following: targetUserId }
+        });
+
+        return NextResponse.json({
+            message: newIsFollowing ? "Followed successfully" : "Unfollowed successfully",
+            isFollowing: newIsFollowing,
+            targetFollowersCount,
+            targetFollowingCount
+        }, { status: 200 });
 
     } catch (error: any) {
         console.error("Error toggling follow:", error);
