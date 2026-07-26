@@ -11,6 +11,8 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.3",
+    "@supabase/supabase-js": "^2.110.8",
     "date-fns": "^4.1.0",
     "firebase": "^12.10.0",
     "firebase-admin": "^13.8.0",

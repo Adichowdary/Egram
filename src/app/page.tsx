@@ -15,6 +15,8 @@ import { SplashScreen } from "@/components/SplashScreen";
 import { PageTransition } from "@/components/PageTransition";
 import { PresenceHandler } from "@/components/PresenceHandler";
 
+import { MobileNav } from "@/components/MobileNav";
+
 export default function Home() {
   const [user, setUser] = useState<User | null>(() => typeof window !== "undefined" && auth ? auth.currentUser : null);
   const [loading, setLoading] = useState<boolean>(() => !(typeof window !== "undefined" && auth?.currentUser));
@@ -35,8 +37,6 @@ export default function Home() {
     return () => unsubscribe();
   }, [router]);
 
-
-
   const handleSignOut = async () => {
     await signOut(auth);
   };
@@ -54,35 +54,39 @@ export default function Home() {
 
       {!loading && user && (
         <PageTransition>
-          <Sidebar
-            user={user}
-            setIsModalOpen={setIsModalOpen}
-            setIsPostModalOpen={setIsPostModalOpen}
-            getInitials={getInitials}
-          />
-
-          <main className="main-content">
-            <CenterFeed user={user} />
-
-            <RightSidebar
+          <div className="pb-20 md:pb-0">
+            <Sidebar
               user={user}
-              handleSignOut={handleSignOut}
+              setIsModalOpen={setIsModalOpen}
+              setIsPostModalOpen={setIsPostModalOpen}
               getInitials={getInitials}
             />
-          </main>
 
-          <CreateMeetModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            user={user}
-            getInitials={getInitials}
-          />
+            <main className="main-content">
+              <CenterFeed user={user} />
 
-          <CreatePostModal
-            isOpen={isPostModalOpen}
-            onClose={() => setIsPostModalOpen(false)}
-            user={user}
-          />
+              <RightSidebar
+                user={user}
+                handleSignOut={handleSignOut}
+                getInitials={getInitials}
+              />
+            </main>
+
+            <MobileNav onOpenCreatePost={() => setIsPostModalOpen(true)} currentUserId={user.uid} />
+
+            <CreateMeetModal
+              isOpen={isModalOpen}
+              onClose={() => setIsModalOpen(false)}
+              user={user}
+              getInitials={getInitials}
+            />
+
+            <CreatePostModal
+              isOpen={isPostModalOpen}
+              onClose={() => setIsPostModalOpen(false)}
+              user={user}
+            />
+          </div>
         </PageTransition>
       )}
     </>

@@ -1,5 +1,5 @@
 "use client";
-import { Home, Search, Compass, MessageSquare, PlusSquare, Moon, Sun, User as UserIcon, Bell, Video } from "lucide-react";
+import { Home, Search, Compass, MessageSquare, PlusSquare, Moon, Sun, User as UserIcon, Bell, Video, BookOpen, Users as UsersIcon, Settings as SettingsIcon } from "lucide-react";
 import { User } from "firebase/auth";
 import Link from "next/link";
 import { useTheme } from "next-themes";
@@ -71,8 +71,10 @@ export function Sidebar({ user, setIsModalOpen, setIsPostModalOpen, getInitials 
 
     const navItems = [
         { href: "/", icon: <Home />, label: "Home" },
+        { href: "/discover", icon: <Compass />, label: "Discover" },
+        { href: "/study", icon: <BookOpen />, label: "Study Mode" },
+        { href: "/circles", icon: <UsersIcon />, label: "Circles" },
         { href: "/search", icon: <Search />, label: "Search" },
-        { href: "/explore", icon: <Compass />, label: "Explore Rooms" },
         { href: "/messages", icon: <MessageSquare />, label: "Messages" },
     ];
 
@@ -139,6 +141,16 @@ export function Sidebar({ user, setIsModalOpen, setIsPostModalOpen, getInitials 
                             )}
                         </div>
                         <span>Profile</span>
+                    </motion.li>
+                </Link>
+
+                <Link href="/settings">
+                    <motion.li 
+                        whileHover={{ scale: 1.02, x: 5 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={pathname === "/settings" ? "active" : ""}
+                    >
+                        <SettingsIcon /> <span>Settings</span>
                     </motion.li>
                 </Link>
             </ul>

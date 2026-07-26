@@ -19,6 +19,8 @@ interface OnlineUser {
     lastActive: any;
 }
 
+import { StoriesBar } from "./StoriesBar";
+
 export function CenterFeed({ user }: CenterFeedProps) {
     const [feedType, setFeedType] = useState<"global" | "following">("global");
     const [onlineFriends, setOnlineFriends] = useState<OnlineUser[]>([]);
@@ -102,7 +104,12 @@ export function CenterFeed({ user }: CenterFeedProps) {
 
     return (
         <div className="feed-column">
-            {/* Stories Bar */}
+            {/* Egram 2.0 24h Stories Bar */}
+            <div className="mb-4">
+                <StoriesBar currentUser={user} getInitials={getInitials} />
+            </div>
+
+            {/* Online Friends Bar */}
             <div className="stories-bar glass overflow-x-auto no-scrollbar py-6 px-4 mb-6">
                 <div className="flex items-center gap-6 min-w-max">
                     {loadingStories ? (
