@@ -57,7 +57,7 @@ export function Sidebar({ user, setIsModalOpen, setIsPostModalOpen, getInitials 
                     setUnreadCount(unread);
                 }
             })
-            .catch(err => console.error(err));
+            .catch(() => {});
     };
 
     useEffect(() => {
@@ -68,7 +68,7 @@ export function Sidebar({ user, setIsModalOpen, setIsPostModalOpen, getInitials 
             checkUnreadNotifications();
         }
 
-        const pollInterval = setInterval(checkUnreadNotifications, 6000);
+        const pollInterval = setInterval(checkUnreadNotifications, 30000);
 
         const handleUpdate = () => fetchSidebarProfile();
         window.addEventListener("userProfileUpdated", handleUpdate);

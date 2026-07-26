@@ -32,8 +32,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
         return NextResponse.json({ success: true, notifications }, { status: 200 });
 
-    } catch (error) {
-        console.error("Error fetching notifications:", error);
+    } catch {
         return NextResponse.json({ success: true, notifications: [] }, { status: 200 });
     }
 }
