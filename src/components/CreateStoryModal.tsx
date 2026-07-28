@@ -92,13 +92,19 @@ export function CreateStoryModal({ isOpen, onClose, currentUser, onStoryCreated 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            // Check file size threshold (50MB maximum)
             if (file.size > 50 * 1024 * 1024) {
-                addToast("Media file size must be under 50MB", "error");
+                addToast("⚠️ This file is not uploaded! File is too large (Not enough space). Please select a file under 50MB.", "error");
+                e.target.value = "";
                 return;
             }
 
             const isVid = file.type.startsWith('video/') || file.name.match(/\.(mp4|webm|mov|m4v|ogg)$/i) !== null;
             setMediaType(isVid ? 'video' : 'image');
+
+            if (isVid && file.size > 30 * 1024 * 1024) {
+                addToast("⚠️ Large video file selected. Ensure you have a stable network connection.", "info");
+            }
 
             if (!isVid) {
                 const compressed = await compressImage(file);
@@ -149,6 +155,8 @@ export function CreateStoryModal({ isOpen, onClose, currentUser, onStoryCreated 
                         if (uploadData.url) {
                             finalMediaUrl = uploadData.url;
                         }
+                    } else {
+                        console.warn("Server upload response not ok, attempting fallback");
                     }
                 } catch (uploadErr) {
                     console.error("Direct upload failed, using DataURL fallback:", uploadErr);
@@ -169,6 +177,7 @@ export function CreateStoryModal({ isOpen, onClose, currentUser, onStoryCreated 
             }
 
             if (!finalMediaUrl) {
+                addToast("⚠️ This file was not uploaded! Not enough space or file preparation failed.", "error");
                 throw new Error("Unable to prepare media for status");
             }
 
@@ -193,11 +202,11 @@ export function CreateStoryModal({ isOpen, onClose, currentUser, onStoryCreated 
                 onClose();
             } else {
                 const errData = await res.json().catch(() => ({}));
-                addToast(errData.error || "Failed to publish story. Please try again.", "error");
+                addToast(errData.error || "⚠️ This file was not uploaded! Storage limit reached or invalid media.", "error");
             }
         } catch (error) {
             console.error("Error creating story:", error);
-            addToast("Failed to publish story", "error");
+            addToast("⚠️ This file was not uploaded! File size is too large or network failed.", "error");
         } finally {
             setIsUploading(false);
         }

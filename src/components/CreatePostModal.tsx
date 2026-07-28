@@ -23,6 +23,11 @@ export function CreatePostModal({ isOpen, onClose, user }: CreatePostModalProps)
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            if (file.size > 25 * 1024 * 1024) {
+                addToast("⚠️ This file is not uploaded! Image size is too large (Not enough space). Max size 25MB.", "error");
+                e.target.value = "";
+                return;
+            }
             setImageFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {

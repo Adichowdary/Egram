@@ -275,32 +275,34 @@ export function StoryViewerModal({ storyUsers, initialIndex, onClose }: StoryVie
                     )}
 
                     {/* Viewer Counter Button (For Story Owner) & Interactive Likes */}
-                    <div className="flex items-center justify-between w-full gap-2">
+                    <div className="flex items-center justify-between w-full gap-3 pt-1">
                         {isOwner ? (
                             <button
                                 onClick={() => { setShowViewersSheet(true); setIsPaused(true); }}
-                                className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/70 border border-white/20 text-white text-xs font-black hover:bg-black/90 backdrop-blur-xl transition-all shadow-md active:scale-95"
+                                className="flex items-center gap-2.5 px-5 py-3 rounded-2xl sm:rounded-full bg-black/85 border-2 border-purple-500/50 text-white text-sm sm:text-base font-black hover:bg-black/95 backdrop-blur-2xl transition-all shadow-xl active:scale-95 cursor-pointer"
+                                title="View status viewers"
                             >
-                                <Eye className="w-4 h-4 text-purple-400" />
+                                <Eye className="w-6 h-6 sm:w-7 sm:h-7 text-purple-400 animate-pulse" />
                                 <span>{viewsCount} {viewsCount === 1 ? 'View' : 'Views'}</span>
                             </button>
                         ) : (
-                            <div className="flex items-center gap-1.5 text-xs text-zinc-300 font-bold bg-black/40 px-3 py-1.5 rounded-full border border-white/10">
-                                <Eye className="w-3.5 h-3.5 text-purple-400" />
+                            <div className="flex items-center gap-2 text-sm sm:text-base text-zinc-100 font-extrabold bg-black/75 px-5 py-2.5 rounded-2xl sm:rounded-full border-2 border-white/20 shadow-md">
+                                <Eye className="w-6 h-6 sm:w-6.5 sm:h-6.5 text-purple-400" />
                                 <span>{viewsCount}</span>
                             </div>
                         )}
 
                         <button
                             onClick={handleToggleLike}
-                            className={`flex items-center gap-2 px-4.5 py-2 rounded-full backdrop-blur-xl border transition-all active:scale-95 ${
+                            className={`flex items-center gap-2.5 px-5.5 py-3 rounded-2xl sm:rounded-full backdrop-blur-2xl border-2 transition-all active:scale-95 cursor-pointer shadow-xl ${
                                 isLiked
-                                    ? "bg-red-500/20 border-red-500/60 text-red-400 shadow-lg shadow-red-500/20"
-                                    : "bg-black/70 border-white/20 text-white hover:bg-black/90"
+                                    ? "bg-red-500/25 border-red-500 text-red-400 shadow-red-500/30 scale-105"
+                                    : "bg-black/85 border-white/30 text-white hover:bg-black/95"
                             }`}
+                            title="Like status"
                         >
-                            <Heart className={`w-4 h-4 transition-transform ${isLiked ? "fill-red-500 text-red-500 scale-110" : ""}`} />
-                            <span className="text-xs font-black">{likesCount}</span>
+                            <Heart className={`w-6.5 h-6.5 sm:w-7 sm:h-7 transition-transform ${isLiked ? "fill-red-500 text-red-500 scale-110" : ""}`} />
+                            <span className="text-sm sm:text-base font-black">{likesCount}</span>
                         </button>
                     </div>
 
@@ -331,24 +333,24 @@ export function StoryViewerModal({ storyUsers, initialIndex, onClose }: StoryVie
                     <div className="absolute inset-0 z-40 bg-black/90 backdrop-blur-2xl p-5 flex flex-col justify-between animate-in fade-in slide-in-from-bottom duration-200">
                         <div>
                             <div className="flex items-center justify-between border-b border-zinc-800 pb-3 mb-4">
-                                <div className="flex items-center gap-2">
-                                    <Eye className="w-5 h-5 text-purple-400" />
-                                    <h3 className="text-sm font-black text-white">Status Viewers ({viewsList.length})</h3>
+                                <div className="flex items-center gap-2.5">
+                                    <Eye className="w-7 h-7 text-purple-400" />
+                                    <h3 className="text-base font-black text-white">Status Viewers ({viewsList.length})</h3>
                                 </div>
                                 <button
                                     onClick={() => { setShowViewersSheet(false); setIsPaused(false); }}
-                                    className="p-1.5 rounded-full bg-zinc-800 text-zinc-300 hover:text-white"
+                                    className="p-2 rounded-full bg-zinc-800 text-zinc-300 hover:text-white"
                                 >
-                                    <X className="w-4 h-4" />
+                                    <X className="w-5 h-5" />
                                 </button>
                             </div>
 
                             <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1 scrollbar-none">
                                 {viewsList.length > 0 ? (
                                     viewsList.map((viewer: any, idx: number) => (
-                                        <div key={viewer.userId || idx} className="flex items-center justify-between p-2.5 rounded-2xl bg-zinc-900/80 border border-zinc-800/80">
+                                        <div key={viewer.userId || idx} className="flex items-center justify-between p-3 rounded-2xl bg-zinc-900/80 border border-zinc-800/80">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 rounded-full bg-purple-600 flex items-center justify-center text-xs font-black text-white overflow-hidden">
+                                                <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-xs font-black text-white overflow-hidden">
                                                     {viewer.avatar ? (
                                                         <img src={viewer.avatar} alt={viewer.name} className="w-full h-full object-cover" />
                                                     ) : (
@@ -360,7 +362,7 @@ export function StoryViewerModal({ storyUsers, initialIndex, onClose }: StoryVie
                                                     <p className="text-[10px] text-zinc-400">Viewed your status</p>
                                                 </div>
                                             </div>
-                                            <Eye className="w-4 h-4 text-zinc-500" />
+                                            <Eye className="w-5.5 h-5.5 text-purple-400" />
                                         </div>
                                     ))
                                 ) : (
