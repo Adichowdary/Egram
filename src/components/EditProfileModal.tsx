@@ -215,12 +215,12 @@ export function EditProfileModal({ isOpen, onClose, user, currentData, onProfile
 
                         {/* Full Name */}
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5 ml-1">Full Name</label>
+                            <label className="block text-xs sm:text-sm font-extrabold uppercase tracking-wider text-zinc-400 mb-1.5 ml-1">Full Name</label>
                             <input
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)] text-xs sm:text-sm font-bold rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-colors"
+                                className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)] text-base sm:text-lg font-bold rounded-2xl px-4.5 py-4 min-h-[52px] sm:min-h-[56px] outline-none focus:border-blue-500 transition-colors"
                                 placeholder="Enter your full name"
                                 required
                             />
@@ -228,23 +228,23 @@ export function EditProfileModal({ isOpen, onClose, user, currentData, onProfile
 
                         {/* Username */}
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5 ml-1">Username</label>
+                            <label className="block text-xs sm:text-sm font-extrabold uppercase tracking-wider text-zinc-400 mb-1.5 ml-1">Username</label>
                             <input
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)] text-xs sm:text-sm font-bold rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-colors"
+                                className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)] text-base sm:text-lg font-bold rounded-2xl px-4.5 py-4 min-h-[52px] sm:min-h-[56px] outline-none focus:border-blue-500 transition-colors"
                                 placeholder="username"
                             />
                         </div>
 
                         {/* Bio */}
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5 ml-1">Bio</label>
+                            <label className="block text-xs sm:text-sm font-extrabold uppercase tracking-wider text-zinc-400 mb-1.5 ml-1">Bio</label>
                             <textarea
                                 value={bio}
                                 onChange={(e) => setBio(e.target.value)}
-                                className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)] text-xs sm:text-sm font-medium rounded-xl p-3.5 outline-none focus:border-blue-500 resize-none h-24 transition-colors"
+                                className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)] text-base sm:text-lg font-medium rounded-2xl p-4 outline-none focus:border-blue-500 resize-none h-28 transition-colors"
                                 placeholder="Share a short bio about your goals and interests..."
                                 maxLength={160}
                             />
@@ -253,42 +253,42 @@ export function EditProfileModal({ isOpen, onClose, user, currentData, onProfile
                         {/* Academic Fields */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5 ml-1">College / Uni</label>
+                                <label className="block text-xs sm:text-sm font-extrabold uppercase tracking-wider text-zinc-400 mb-1.5 ml-1">College / Uni</label>
                                 <input
                                     type="text"
                                     value={college}
                                     onChange={(e) => setCollege(e.target.value)}
-                                    className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)] text-xs font-bold rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-colors"
+                                    className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)] text-base sm:text-lg font-bold rounded-2xl px-4.5 py-4 min-h-[52px] sm:min-h-[56px] outline-none focus:border-blue-500 transition-colors"
                                     placeholder="e.g. Stanford University"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5 ml-1">Branch & Year</label>
+                                <label className="block text-xs sm:text-sm font-extrabold uppercase tracking-wider text-zinc-400 mb-1.5 ml-1">Branch & Year</label>
                                 <input
                                     type="text"
                                     value={branch}
                                     onChange={(e) => setBranch(e.target.value)}
-                                    className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)] text-xs font-bold rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-colors"
+                                    className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)] text-base sm:text-lg font-bold rounded-2xl px-4.5 py-4 min-h-[52px] sm:min-h-[56px] outline-none focus:border-blue-500 transition-colors"
                                     placeholder="e.g. Computer Science - 3rd Year"
                                 />
                             </div>
                         </div>
 
                         {/* Footer Actions */}
-                        <div className="pt-3 border-t border-[var(--card-border)] flex items-center justify-end gap-3">
+                        <div className="pt-4 border-t border-[var(--card-border)] flex items-center justify-end gap-3">
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="px-5 py-2.5 rounded-xl bg-zinc-800 text-xs font-bold text-zinc-300 hover:bg-zinc-700 transition-colors"
+                                className="px-6 py-3.5 rounded-2xl bg-zinc-800 text-sm font-bold text-zinc-300 hover:bg-zinc-700 transition-colors min-h-[48px]"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
                                 disabled={isSaving}
-                                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-extrabold shadow-lg shadow-blue-500/20 hover:opacity-95 disabled:opacity-50 flex items-center gap-2"
+                                className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-black shadow-lg shadow-blue-500/20 hover:opacity-95 disabled:opacity-50 flex items-center gap-2 min-h-[48px]"
                             >
-                                <Save className="w-4 h-4" />
+                                <Save className="w-4.5 h-4.5" />
                                 <span>{isSaving ? "Saving..." : "Save Profile"}</span>
                             </button>
                         </div>

@@ -291,7 +291,7 @@ export default function LoginPage() {
                                     <button
                                         type="button"
                                         onClick={() => { setIsSignUp(false); setError(""); }}
-                                        className={`relative flex-1 py-3 text-xs sm:text-base font-extrabold rounded-xl transition-all duration-200 ${
+                                        className={`relative flex-1 py-3.5 min-h-[50px] text-sm sm:text-base font-black rounded-xl transition-all duration-200 ${
                                             !isSignUp ? "text-white shadow-lg" : "text-zinc-400 hover:text-white"
                                         }`}
                                     >
@@ -307,7 +307,7 @@ export default function LoginPage() {
                                     <button
                                         type="button"
                                         onClick={() => { setIsSignUp(true); setError(""); }}
-                                        className={`relative flex-1 py-3 text-xs sm:text-base font-extrabold rounded-xl transition-all duration-200 ${
+                                        className={`relative flex-1 py-3.5 min-h-[50px] text-sm sm:text-base font-black rounded-xl transition-all duration-200 ${
                                             isSignUp ? "text-white shadow-lg" : "text-zinc-400 hover:text-white"
                                         }`}
                                     >
@@ -339,9 +339,9 @@ export default function LoginPage() {
                                     type="button"
                                     onClick={handleGoogleSignIn}
                                     disabled={loading}
-                                    className="w-full flex items-center justify-center gap-3 bg-zinc-950 hover:bg-zinc-800/90 text-zinc-100 border border-zinc-800 px-5 py-4 rounded-2xl font-extrabold text-xs sm:text-base transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 shadow-sm group"
+                                    className="w-full flex items-center justify-center gap-3 bg-zinc-950 hover:bg-zinc-800/90 text-zinc-100 border border-zinc-800 px-5 py-4.5 sm:py-5 min-h-[58px] sm:min-h-[62px] rounded-2xl font-black text-sm sm:text-base transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 shadow-sm group"
                                 >
-                                    <svg className="w-5.5 h-5.5 flex-shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
+                                    <svg className="w-6 h-6 flex-shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
                                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                                         <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
                                         <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
@@ -361,7 +361,7 @@ export default function LoginPage() {
                                 </div>
 
                                 {/* Main Form */}
-                                <form onSubmit={handleEmailAuth} className="space-y-5">
+                                <form onSubmit={handleEmailAuth} className="space-y-6">
                                     
                                     {/* Full Name Input (Sign Up only) */}
                                     <AnimatePresence mode="popLayout">
@@ -376,13 +376,13 @@ export default function LoginPage() {
                                                     Full Name
                                                 </label>
                                                 <div className="relative flex items-center">
-                                                    <User className="absolute left-4 w-5 h-5 text-zinc-400 pointer-events-none z-20" />
+                                                    <User className="absolute left-4.5 w-5.5 h-5.5 text-zinc-400 pointer-events-none z-20" />
                                                     <input
                                                         type="text"
                                                         value={name}
                                                         onChange={(e) => setName(e.target.value)}
-                                                        className="w-full bg-zinc-950/90 border border-zinc-800 text-white pl-12 pr-4 py-4 rounded-2xl text-sm sm:text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-bold"
-                                                        placeholder=""
+                                                        className="w-full bg-zinc-950/90 border border-zinc-800 text-white pl-13 pr-4 py-4.5 sm:py-5 min-h-[58px] sm:min-h-[62px] rounded-2xl text-base sm:text-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-bold"
+                                                        placeholder="Enter your full name"
                                                         required={isSignUp}
                                                     />
                                                 </div>
@@ -396,13 +396,13 @@ export default function LoginPage() {
                                             Email Address
                                         </label>
                                         <div className="relative flex items-center">
-                                            <Mail className="absolute left-4 w-5 h-5 text-zinc-400 pointer-events-none z-20" />
+                                            <Mail className="absolute left-4.5 w-5.5 h-5.5 text-zinc-400 pointer-events-none z-20" />
                                             <input
                                                 type="email"
                                                 value={email}
                                                 onChange={(e) => setEmail(e.target.value)}
-                                                className="w-full bg-zinc-950/90 border border-zinc-800 text-white pl-12 pr-4 py-4 rounded-2xl text-sm sm:text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-bold"
-                                                placeholder=""
+                                                className="w-full bg-zinc-950/90 border border-zinc-800 text-white pl-13 pr-4 py-4.5 sm:py-5 min-h-[58px] sm:min-h-[62px] rounded-2xl text-base sm:text-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-bold"
+                                                placeholder="name@example.com"
                                                 required
                                             />
                                         </div>
@@ -421,22 +421,22 @@ export default function LoginPage() {
                                             )}
                                         </div>
                                         <div className="relative flex items-center">
-                                            <Lock className="absolute left-4 w-5 h-5 text-zinc-400 pointer-events-none z-20" />
+                                            <Lock className="absolute left-4.5 w-5.5 h-5.5 text-zinc-400 pointer-events-none z-20" />
                                             <input
                                                 type={showPassword ? "text" : "password"}
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
-                                                className="w-full bg-zinc-950/90 border border-zinc-800 text-white pl-12 pr-12 py-4 rounded-2xl text-sm sm:text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-bold"
-                                                placeholder=""
+                                                className="w-full bg-zinc-950/90 border border-zinc-800 text-white pl-13 pr-14 py-4.5 sm:py-5 min-h-[58px] sm:min-h-[62px] rounded-2xl text-base sm:text-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-bold"
+                                                placeholder="••••••••"
                                                 required
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => setShowPassword(!showPassword)}
-                                                className="absolute right-4 text-zinc-400 hover:text-white p-1 z-20 select-none"
+                                                className="absolute right-4.5 text-zinc-400 hover:text-white p-2 z-20 select-none min-w-[44px] min-h-[44px] flex items-center justify-center"
                                                 title={showPassword ? "Hide password" : "Show password"}
                                             >
-                                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                                {showPassword ? <EyeOff className="w-5.5 h-5.5" /> : <Eye className="w-5.5 h-5.5" />}
                                             </button>
                                         </div>
 
@@ -455,7 +455,7 @@ export default function LoginPage() {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="w-full mt-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white py-4 sm:py-4.5 rounded-2xl font-black text-sm sm:text-base transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 shadow-xl shadow-blue-600/30 flex items-center justify-center gap-2.5"
+                                        className="w-full mt-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white py-4.5 sm:py-5 min-h-[58px] sm:min-h-[62px] rounded-2xl font-black text-base sm:text-lg transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 shadow-xl shadow-blue-600/30 flex items-center justify-center gap-2.5"
                                     >
                                         {loading ? (
                                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

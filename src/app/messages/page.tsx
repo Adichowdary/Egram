@@ -686,9 +686,9 @@ export default function MessagesPage() {
                                         {selectedUser && (
                                             <button
                                                 onClick={() => handleBlockUser(selectedUser.firebaseUid, blockedUsers.includes(selectedUser.firebaseUid) ? 'unblock' : 'block')}
-                                                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all min-h-[40px] ${blockedUsers.includes(selectedUser.firebaseUid) ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30' : 'bg-zinc-800/80 text-zinc-300 hover:text-white hover:bg-zinc-700 border border-zinc-700'}`}
+                                                className={`px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-black transition-all min-h-[44px] shadow-sm ${blockedUsers.includes(selectedUser.firebaseUid) ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30' : 'bg-zinc-800/80 text-zinc-300 hover:text-white hover:bg-zinc-700 border border-zinc-700'}`}
                                             >
-                                                {blockedUsers.includes(selectedUser.firebaseUid) ? 'Unblock' : 'Block'}
+                                                {blockedUsers.includes(selectedUser.firebaseUid) ? 'Unblock' : 'Block User'}
                                             </button>
                                         )}
                                         <button

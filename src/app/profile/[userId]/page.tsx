@@ -367,13 +367,13 @@ export default function UserProfilePage() {
                                     className={`w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-tr from-purple-600 via-pink-500 to-orange-400 p-1 relative flex-shrink-0 ${isOwnProfile ? 'cursor-pointer group' : ''}`}
                                     onClick={() => isOwnProfile && fileInputRef.current?.click()}
                                 >
-                                    <div className="w-full h-full bg-zinc-900 rounded-full flex items-center justify-center border-2 border-[var(--card-border)] overflow-hidden relative">
+                                    <div className="w-full h-full bg-[var(--card-bg)] rounded-full flex items-center justify-center border-2 border-[var(--card-border)] overflow-hidden relative">
                                         {isUploading ? (
                                             <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
                                         ) : profileData?.photoURL ? (
                                             <img src={profileData.photoURL} alt="Profile" className="w-full h-full object-cover" />
                                         ) : (
-                                            <span className="text-4xl font-black text-white tracking-widest leading-none mb-1">{getInitials(profileData?.displayName || profileData?.email)}</span>
+                                            <span className="text-2xl sm:text-3xl font-black text-[var(--primary)] tracking-widest leading-none mb-0.5">{getInitials(profileData?.displayName || profileData?.name || profileData?.email)}</span>
                                         )}
 
                                         {isOwnProfile && !isUploading && (
@@ -394,7 +394,7 @@ export default function UserProfilePage() {
                                 </div>
 
                                 <div className="flex-1 flex flex-col gap-4 min-w-0 w-full items-center sm:items-start text-center sm:text-left">
-                                    <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4 w-full">
+                                    <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-3 w-full">
                                         {isEditingName ? (
                                             <div className="flex flex-col gap-3 flex-1 w-full min-w-0">
                                                 <input
@@ -405,30 +405,30 @@ export default function UserProfilePage() {
                                                     placeholder="Enter your full name"
                                                 />
                                                 <div className="flex items-center gap-2">
-                                                    <button onClick={handleSaveName} disabled={isSavingName || !nameText.trim()} className="text-white bg-[var(--primary)] px-4 py-2 rounded-xl text-sm font-bold flex-1 disabled:opacity-50">
+                                                    <button onClick={handleSaveName} disabled={isSavingName || !nameText.trim()} className="text-white bg-[var(--primary)] px-4 py-2 rounded-xl text-sm font-bold flex-1 disabled:opacity-50 min-h-[40px]">
                                                         {isSavingName ? "Saving..." : "Save Name"}
                                                     </button>
-                                                    <button onClick={() => setIsEditingName(false)} className="bg-[var(--accent-bg)] text-[var(--text-light)] px-4 py-2 rounded-xl text-sm font-bold hover:text-[var(--text-dark)] flex-1">
+                                                    <button onClick={() => setIsEditingName(false)} className="bg-[var(--accent-bg)] text-[var(--text-light)] px-4 py-2 rounded-xl text-sm font-bold hover:text-[var(--text-dark)] flex-1 min-h-[40px]">
                                                         Cancel
                                                     </button>
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                <h1 className="text-2xl font-black text-[var(--text-dark)] truncate leading-tight tracking-tight">
+                                            <div className="flex items-center justify-center sm:justify-start gap-2.5 flex-wrap flex-1 min-w-0 w-full">
+                                                <h1 className="text-xl sm:text-2xl font-black text-[var(--text-dark)] leading-tight tracking-tight">
                                                     {profileData?.displayName || profileData?.name || profileData?.email?.split('@')[0]}
                                                 </h1>
                                                 {isOwnProfile && (
                                                     <button
                                                         onClick={() => setIsEditProfileOpen(true)}
-                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white border border-blue-500/30 rounded-xl text-xs font-bold transition-all shadow-sm flex-shrink-0"
+                                                        className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white border border-blue-500/30 rounded-xl text-xs font-bold transition-all shadow-sm flex-shrink-0 min-h-[36px]"
                                                     >
                                                         <Edit3 className="w-3.5 h-3.5" /> Edit Profile
                                                     </button>
                                                 )}
                                                 <button
                                                     onClick={handleShareProfile}
-                                                    className="p-2 text-zinc-400 hover:text-[var(--primary)] transition-all bg-white/5 hover:bg-white/10 rounded-lg flex-shrink-0"
+                                                    className="p-2 text-zinc-400 hover:text-[var(--primary)] transition-all bg-white/5 hover:bg-white/10 rounded-xl flex-shrink-0 min-h-[36px] min-w-[36px] flex items-center justify-center"
                                                     title="Share Profile Link"
                                                 >
                                                     <Share2 className="w-4 h-4" />
@@ -436,22 +436,15 @@ export default function UserProfilePage() {
                                             </div>
                                         )}
                                         {!isOwnProfile && (
-                                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                                            <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
                                                 <button
                                                     onClick={toggleFollow}
-                                                    className={`px-6 py-2.5 sm:py-2 flex-1 sm:flex-none rounded-xl text-sm sm:text-xs font-black transition-all transform active:scale-95 ${isFollowing
+                                                    className={`px-6 py-2.5 flex-1 sm:flex-none rounded-xl text-xs font-black transition-all min-h-[40px] transform active:scale-95 ${isFollowing
                                                         ? "bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700"
                                                         : "bg-[var(--primary)] text-white hover:opacity-90 shadow-xl shadow-purple-500/30"
                                                         }`}
                                                 >
                                                     {isFollowing ? "Following" : "Follow"}
-                                                </button>
-                                                <button
-                                                    onClick={handleShareProfile}
-                                                    className="p-2.5 sm:p-2 text-zinc-300 hover:text-[var(--primary)] transition-all bg-white/10 rounded-xl flex-shrink-0"
-                                                    title="Share Profile"
-                                                >
-                                                    <Share2 className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         )}
@@ -553,7 +546,7 @@ export default function UserProfilePage() {
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.1 }}
-                            className="w-full max-w-[470px] relative overflow-hidden rounded-[32px] mb-12 aspect-[16/8] group border-4 border-[var(--card-border)] shadow-xl"
+                            className="w-full max-w-[470px] relative overflow-hidden rounded-[32px] mb-12 min-h-[170px] sm:min-h-[190px] group border-4 border-[var(--card-border)] shadow-xl flex flex-col justify-end"
                         >
                             <img
                                 src="/streak-hero.png"

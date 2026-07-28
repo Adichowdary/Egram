@@ -86,7 +86,9 @@ export function RightSidebar({ user, handleSignOut, getInitials }: RightSidebarP
                         </div>
                     </span>
                 </div>
-                <button onClick={handleSignOut} className="switch-btn cursor-pointer bg-transparent border-none">Logout</button>
+                <button onClick={handleSignOut} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-extrabold text-xs sm:text-sm rounded-xl transition-all active:scale-95 shadow-sm min-h-[38px] cursor-pointer">
+                    Logout
+                </button>
             </div>
 
             {/* Meet Rooms Widget */}

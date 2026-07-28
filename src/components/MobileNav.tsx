@@ -199,9 +199,9 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, currentUserId }:
                                 </button>
                                 <button
                                     onClick={handleSignOut}
-                                    className="flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 font-bold text-sm hover:bg-red-500/20 transition-all min-h-[48px]"
+                                    className="flex items-center justify-center gap-2.5 py-4 px-5 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 font-black text-base hover:bg-red-500/20 transition-all min-h-[54px] shadow-sm cursor-pointer"
                                 >
-                                    <LogOut className="w-5 h-5" /> Sign Out
+                                    <LogOut className="w-5.5 h-5.5" /> Sign Out
                                 </button>
                             </div>
                         </motion.div>

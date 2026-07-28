@@ -24,7 +24,9 @@ export function UserCard({ profile, isFollowing, onFollow, showFollowButton = tr
 
     const getInitials = (name: string | null) => {
         if (!name) return "U";
-        return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        const parts = name.trim().split(/\s+/);
+        if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     };
 
     const handleShare = async (e: React.MouseEvent) => {
@@ -59,7 +61,7 @@ export function UserCard({ profile, isFollowing, onFollow, showFollowButton = tr
         >
             <Link href={`/profile/${profile.uid}`} className="flex items-center gap-4 flex-1 min-w-0">
                 {/* Avatar */}
-                <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-purple-500 via-pink-500 to-orange-400 p-0.5 flex-shrink-0">
+                <div className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-gradient-to-tr from-purple-500 via-pink-500 to-orange-400 p-0.5 flex-shrink-0">
                     <div
                         className="w-full h-full rounded-full flex items-center justify-center overflow-hidden"
                         style={{ background: "var(--card-bg)", border: "2px solid var(--card-bg)" }}
@@ -67,7 +69,7 @@ export function UserCard({ profile, isFollowing, onFollow, showFollowButton = tr
                         {profile.photoURL ? (
                             <img src={profile.photoURL} alt={profile.displayName || "User"} className="w-full h-full object-cover" />
                         ) : (
-                            <span className="text-xl font-black uppercase" style={{ color: "var(--primary)" }}>
+                            <span className="text-lg sm:text-xl font-black uppercase" style={{ color: "var(--primary)" }}>
                                 {getInitials(profile.displayName)}
                             </span>
                         )}

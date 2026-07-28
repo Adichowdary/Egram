@@ -242,9 +242,9 @@ export default function SettingsPage() {
 
                                 <button
                                     onClick={() => setIsLogoutModalOpen(true)}
-                                    className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold hover:bg-red-500/20 transition-all active:scale-95"
+                                    className="hidden sm:flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-red-500/10 text-red-400 border border-red-500/20 text-sm sm:text-base font-black hover:bg-red-500/20 transition-all active:scale-95 shadow-sm min-h-[48px] cursor-pointer"
                                 >
-                                    <LogOut className="w-4 h-4" /> Sign Out
+                                    <LogOut className="w-5 h-5" /> Sign Out
                                 </button>
                             </motion.div>
 
@@ -265,7 +265,7 @@ export default function SettingsPage() {
                                                         setActiveTab(tab.id as any);
                                                         setMobileView("detail");
                                                     }}
-                                                    className={`w-full flex items-center justify-between p-4 rounded-2xl text-sm sm:text-base font-extrabold transition-all relative overflow-hidden ${
+                                                    className={`w-full flex items-center justify-between p-4.5 sm:p-5 rounded-2xl min-h-[56px] sm:min-h-[60px] text-base sm:text-lg font-black transition-all relative overflow-hidden ${
                                                         isActive
                                                             ? isDanger
                                                                 ? "bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-500/30"
@@ -275,11 +275,11 @@ export default function SettingsPage() {
                                                                 : "text-[var(--text-light)] hover:text-[var(--text-dark)] hover:bg-[var(--accent-bg)]"
                                                     }`}
                                                 >
-                                                    <div className="flex items-center gap-3.5">
-                                                        <Icon className="w-5.5 h-5.5 flex-shrink-0" />
+                                                    <div className="flex items-center gap-4">
+                                                        <Icon className="w-6 h-6 flex-shrink-0" />
                                                         <span className="tracking-tight">{tab.label}</span>
                                                     </div>
-                                                    <ChevronRight className={`w-5 h-5 flex-shrink-0 transition-transform ${isActive ? "translate-x-0 opacity-100" : "opacity-40"}`} />
+                                                    <ChevronRight className={`w-5.5 h-5.5 flex-shrink-0 transition-transform ${isActive ? "translate-x-0 opacity-100" : "opacity-40"}`} />
                                                 </button>
                                             );
                                         })}
@@ -288,30 +288,30 @@ export default function SettingsPage() {
 
                                 {/* Main Details Content Panel */}
                                 <div className={`md:col-span-7 ${mobileView === "list" ? "hidden md:block" : "block"}`}>
-                                    <div className="glass rounded-3xl p-6 sm:p-7 border border-[var(--card-border)] relative shadow-2xl space-y-6">
+                                    <div className="glass rounded-3xl p-6 sm:p-8 border border-[var(--card-border)] relative shadow-2xl space-y-7">
                                         
                                         {/* Mobile Navigation Back Button */}
                                         <button
                                             onClick={() => setMobileView("list")}
-                                            className="md:hidden flex items-center gap-1.5 text-xs font-bold text-blue-500 mb-2"
+                                            className="md:hidden flex items-center gap-2 text-sm font-bold text-blue-500 mb-3 py-2 px-3 bg-blue-500/10 rounded-xl w-fit"
                                         >
-                                            <ArrowLeft className="w-4 h-4" /> Back to Settings Navigation
+                                            <ArrowLeft className="w-4.5 h-4.5" /> Back to Settings Navigation
                                         </button>
 
                                         {/* TABS CONTENT */}
 
                                         {/* 1. Account & Profile */}
                                         {activeTab === "account" && (
-                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-7">
                                                 <div className="border-b border-[var(--card-border)] pb-4">
-                                                    <h2 className="text-xl font-black">Account Profile</h2>
-                                                    <p className="text-xs text-[var(--text-light)] mt-0.5">Manage your public information and avatar</p>
+                                                    <h2 className="text-2xl font-black">Account Profile</h2>
+                                                    <p className="text-xs sm:text-sm text-[var(--text-light)] mt-1 font-medium">Manage your public information and avatar</p>
                                                 </div>
 
                                                 {/* Avatar Upload Section */}
-                                                <div className="flex items-center gap-5 p-4 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)]">
+                                                <div className="flex items-center gap-5 p-5 sm:p-6 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)]">
                                                     <div className="relative group cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
-                                                        <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-blue-500/40 bg-zinc-900 flex items-center justify-center text-xl font-black">
+                                                        <div className="w-22 h-22 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-blue-500/40 bg-zinc-900 flex items-center justify-center text-2xl font-black">
                                                             {avatarUrl ? (
                                                                 <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                                                             ) : (
@@ -319,18 +319,18 @@ export default function SettingsPage() {
                                                             )}
                                                         </div>
                                                         <div className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                                                            <Camera className="w-6 h-6" />
+                                                            <Camera className="w-7 h-7" />
                                                         </div>
                                                     </div>
 
-                                                    <div className="space-y-1">
-                                                        <h4 className="text-sm font-bold">{name || "Student"}</h4>
-                                                        <p className="text-xs text-[var(--text-light)]">{user.email}</p>
+                                                    <div className="space-y-1.5">
+                                                        <h4 className="text-base sm:text-lg font-black">{name || "Student"}</h4>
+                                                        <p className="text-xs sm:text-sm text-[var(--text-light)]">{user.email}</p>
                                                         <button
                                                             type="button"
                                                             disabled={isUploadingAvatar}
                                                             onClick={() => avatarInputRef.current?.click()}
-                                                            className="text-xs font-bold text-blue-500 hover:underline pt-1 block"
+                                                            className="text-xs sm:text-sm font-bold text-blue-500 hover:underline pt-1 block"
                                                         >
                                                             {isUploadingAvatar ? "Uploading avatar..." : "Change Profile Photo"}
                                                         </button>
@@ -345,54 +345,54 @@ export default function SettingsPage() {
                                                 </div>
 
                                                 {/* Form Fields */}
-                                                <div className="space-y-5">
+                                                <div className="space-y-6">
                                                     <div>
-                                                        <label className="text-sm font-extrabold uppercase tracking-wider text-zinc-300">Full Name</label>
+                                                        <label className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-[var(--text-light)] block mb-1.5">Full Name</label>
                                                         <input
                                                             value={name}
                                                             onChange={(e) => setName(e.target.value)}
-                                                            className="w-full mt-2 p-4 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)] text-sm sm:text-base font-bold focus:outline-none focus:border-blue-500 transition-colors text-[var(--text-dark)]"
+                                                            className="w-full p-4 sm:p-4.5 min-h-[54px] sm:min-h-[58px] rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)] text-base sm:text-lg font-bold focus:outline-none focus:border-blue-500 transition-all text-[var(--text-dark)]"
                                                             placeholder="Your Full Name"
                                                         />
                                                     </div>
 
                                                     <div>
-                                                        <label className="text-sm font-extrabold uppercase tracking-wider text-zinc-300">Username</label>
+                                                        <label className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-[var(--text-light)] block mb-1.5">Username</label>
                                                         <input
                                                             value={username}
                                                             onChange={(e) => setUsername(e.target.value)}
-                                                            className="w-full mt-2 p-4 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)] text-sm sm:text-base font-bold focus:outline-none focus:border-blue-500 transition-colors text-[var(--text-dark)]"
+                                                            className="w-full p-4 sm:p-4.5 min-h-[54px] sm:min-h-[58px] rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)] text-base sm:text-lg font-bold focus:outline-none focus:border-blue-500 transition-all text-[var(--text-dark)]"
                                                             placeholder="username"
                                                         />
                                                     </div>
 
                                                     <div>
-                                                        <label className="text-sm font-extrabold uppercase tracking-wider text-zinc-300">Bio</label>
+                                                        <label className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-[var(--text-light)] block mb-1.5">Bio</label>
                                                         <textarea
                                                             value={bio}
                                                             onChange={(e) => setBio(e.target.value)}
-                                                            className="w-full mt-2 p-4 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)] text-sm sm:text-base font-medium focus:outline-none focus:border-blue-500 resize-none h-28 transition-colors text-[var(--text-dark)]"
+                                                            className="w-full p-4 sm:p-4.5 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)] text-base sm:text-lg font-medium focus:outline-none focus:border-blue-500 resize-none h-32 transition-all text-[var(--text-dark)]"
                                                             placeholder="Tell fellow learners about your focus goals..."
                                                         />
                                                     </div>
 
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                                         <div>
-                                                            <label className="text-sm font-extrabold uppercase tracking-wider text-zinc-300">College / Institution</label>
+                                                            <label className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-[var(--text-light)] block mb-1.5">College / Institution</label>
                                                             <input
                                                                 value={college}
                                                                 onChange={(e) => setCollege(e.target.value)}
                                                                 placeholder="e.g. Stanford University"
-                                                                className="w-full mt-2 p-4 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)] text-sm font-bold focus:outline-none focus:border-blue-500 transition-colors text-[var(--text-dark)]"
+                                                                className="w-full p-4 sm:p-4.5 min-h-[54px] sm:min-h-[58px] rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)] text-base sm:text-lg font-bold focus:outline-none focus:border-blue-500 transition-all text-[var(--text-dark)]"
                                                             />
                                                         </div>
                                                         <div>
-                                                            <label className="text-sm font-extrabold uppercase tracking-wider text-zinc-300">Branch & Academic Year</label>
+                                                            <label className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-[var(--text-light)] block mb-1.5">Branch & Academic Year</label>
                                                             <input
                                                                 value={branch}
                                                                 onChange={(e) => setBranch(e.target.value)}
                                                                 placeholder="e.g. Computer Science - 3rd Year"
-                                                                className="w-full mt-2 p-4 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)] text-sm font-bold focus:outline-none focus:border-blue-500 transition-colors text-[var(--text-dark)]"
+                                                                className="w-full p-4 sm:p-4.5 min-h-[54px] sm:min-h-[58px] rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)] text-base sm:text-lg font-bold focus:outline-none focus:border-blue-500 transition-all text-[var(--text-dark)]"
                                                             />
                                                         </div>
                                                     </div>
@@ -400,9 +400,9 @@ export default function SettingsPage() {
                                                     <button
                                                         onClick={handleSaveAccount}
                                                         disabled={isSaving}
-                                                        className="flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm sm:text-base font-extrabold shadow-xl shadow-blue-500/20 hover:opacity-95 disabled:opacity-50 mt-6 active:scale-95 transition-transform"
+                                                        className="flex items-center justify-center gap-3 w-full sm:w-auto px-9 py-4.5 sm:py-5 min-h-[58px] sm:min-h-[62px] rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-base sm:text-lg font-extrabold shadow-xl shadow-blue-500/20 hover:opacity-95 disabled:opacity-50 mt-6 active:scale-95 transition-transform"
                                                     >
-                                                        <Save className="w-5 h-5" /> {isSaving ? "Saving..." : "Save Profile Changes"}
+                                                        <Save className="w-5.5 h-5.5" /> {isSaving ? "Saving..." : "Save Profile Changes"}
                                                     </button>
                                                 </div>
                                             </motion.div>
@@ -410,16 +410,16 @@ export default function SettingsPage() {
 
                                         {/* 2. Appearance & Themes */}
                                         {activeTab === "appearance" && (
-                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-7">
                                                 <div className="border-b border-[var(--card-border)] pb-4">
-                                                    <h2 className="text-xl font-black">Appearance & Themes</h2>
-                                                    <p className="text-xs text-[var(--text-light)] mt-0.5">Customize visual modes and design themes</p>
+                                                    <h2 className="text-2xl font-black">Appearance & Themes</h2>
+                                                    <p className="text-xs sm:text-sm text-[var(--text-light)] mt-1 font-medium">Customize visual modes and design themes</p>
                                                 </div>
 
-                                                <div className="space-y-5">
+                                                <div className="space-y-6">
                                                     <div>
-                                                        <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-3">Theme Options</p>
-                                                        <div className="grid grid-cols-3 gap-3">
+                                                        <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--text-light)] mb-3">Theme Options</p>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                                             {[
                                                                 { id: "dark", label: "Dark OLED", icon: Moon },
                                                                 { id: "light", label: "Light Theme", icon: Sun },
@@ -434,13 +434,13 @@ export default function SettingsPage() {
                                                                             setTheme(t.id);
                                                                             addToast(`Theme switched to ${t.label}`, "info");
                                                                         }}
-                                                                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border text-xs font-bold transition-all ${
+                                                                        className={`flex flex-col items-center justify-center gap-3 p-5 sm:p-6 rounded-2xl border text-sm sm:text-base font-black min-h-[90px] sm:min-h-[100px] transition-all ${
                                                                             isSelected
                                                                                 ? "border-blue-500 bg-blue-500/10 text-blue-400 shadow-md"
                                                                                 : "border-[var(--card-border)] bg-[var(--accent-bg)] text-zinc-400 hover:text-white"
                                                                         }`}
                                                                     >
-                                                                        <Icon className="w-6 h-6" />
+                                                                        <Icon className="w-7 h-7" />
                                                                         <span>{t.label}</span>
                                                                     </button>
                                                                 );
@@ -448,12 +448,12 @@ export default function SettingsPage() {
                                                         </div>
                                                     </div>
 
-                                                    <div className="p-4 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)] flex items-center justify-between">
+                                                    <div className="p-5 sm:p-6 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)] flex items-center justify-between">
                                                         <div>
-                                                            <h4 className="text-xs font-bold">Glassmorphic Blur Effects</h4>
-                                                            <p className="text-[11px] text-[var(--text-light)]">High performance backdrop blur filtering</p>
+                                                            <h4 className="text-sm sm:text-base font-black">Glassmorphic Blur Effects</h4>
+                                                            <p className="text-xs sm:text-sm text-[var(--text-light)]">High performance backdrop blur filtering</p>
                                                         </div>
-                                                        <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">Enabled</span>
+                                                        <span className="text-xs sm:text-sm font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-1.5 rounded-full">Enabled</span>
                                                     </div>
                                                 </div>
                                             </motion.div>
@@ -461,26 +461,26 @@ export default function SettingsPage() {
 
                                         {/* 3. Notifications */}
                                         {activeTab === "notifications" && (
-                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-7">
                                                 <div className="border-b border-[var(--card-border)] pb-4">
-                                                    <h2 className="text-xl font-black">Notification Rules</h2>
-                                                    <p className="text-xs text-[var(--text-light)] mt-0.5">Control what activity triggers notifications</p>
+                                                    <h2 className="text-2xl font-black">Notification Rules</h2>
+                                                    <p className="text-xs sm:text-sm text-[var(--text-light)] mt-1 font-medium">Control what activity triggers notifications</p>
                                                 </div>
 
-                                                <div className="space-y-3">
+                                                <div className="space-y-4">
                                                     {Object.entries(notifications).map(([key, val]) => (
-                                                        <div key={key} className="flex items-center justify-between p-4 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)]">
+                                                        <div key={key} className="flex items-center justify-between p-5 sm:p-6 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)]">
                                                             <div>
-                                                                <p className="text-xs font-bold capitalize">{key} Notifications</p>
-                                                                <p className="text-[11px] text-[var(--text-light)]">Alert when users engage with {key}</p>
+                                                                <p className="text-sm sm:text-base font-black capitalize">{key} Notifications</p>
+                                                                <p className="text-xs sm:text-sm text-[var(--text-light)] mt-0.5">Alert when users engage with {key}</p>
                                                             </div>
                                                             <button
                                                                 onClick={() => setNotifications((prev) => ({ ...prev, [key]: !val }))}
-                                                                className={`w-12 h-6 rounded-full transition-colors relative p-1 ${
+                                                                className={`w-14 h-7 min-w-[56px] rounded-full transition-colors relative p-1 ${
                                                                     val ? "bg-blue-600" : "bg-zinc-700"
                                                                 }`}
                                                             >
-                                                                <div className={`w-4 h-4 rounded-full bg-white transition-transform ${val ? "translate-x-6" : "translate-x-0"}`} />
+                                                                <div className={`w-5 h-5 rounded-full bg-white transition-transform ${val ? "translate-x-7" : "translate-x-0"}`} />
                                                             </button>
                                                         </div>
                                                     ))}
@@ -490,40 +490,40 @@ export default function SettingsPage() {
 
                                         {/* 4. Privacy Controls */}
                                         {activeTab === "privacy" && (
-                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-7">
                                                 <div className="border-b border-[var(--card-border)] pb-4">
-                                                    <h2 className="text-xl font-black">Privacy Controls</h2>
-                                                    <p className="text-xs text-[var(--text-light)] mt-0.5">Manage account visibility and interaction permissions</p>
+                                                    <h2 className="text-2xl font-black">Privacy Controls</h2>
+                                                    <p className="text-xs sm:text-sm text-[var(--text-light)] mt-1 font-medium">Manage account visibility and interaction permissions</p>
                                                 </div>
 
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)]">
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center justify-between p-5 sm:p-6 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)]">
                                                         <div>
-                                                            <p className="text-xs font-bold">Private Account Profile</p>
-                                                            <p className="text-[11px] text-[var(--text-light)]">Only approved followers can view your posts and activity</p>
+                                                            <p className="text-sm sm:text-base font-black">Private Account Profile</p>
+                                                            <p className="text-xs sm:text-sm text-[var(--text-light)] mt-0.5">Only approved followers can view your posts and activity</p>
                                                         </div>
                                                         <button
                                                             onClick={() => setPrivacy((prev) => ({ ...prev, isPrivate: !prev.isPrivate }))}
-                                                            className={`w-12 h-6 rounded-full transition-colors relative p-1 ${
+                                                            className={`w-14 h-7 min-w-[56px] rounded-full transition-colors relative p-1 ${
                                                                 privacy.isPrivate ? "bg-blue-600" : "bg-zinc-700"
                                                             }`}
                                                         >
-                                                            <div className={`w-4 h-4 rounded-full bg-white transition-transform ${privacy.isPrivate ? "translate-x-6" : "translate-x-0"}`} />
+                                                            <div className={`w-5 h-5 rounded-full bg-white transition-transform ${privacy.isPrivate ? "translate-x-7" : "translate-x-0"}`} />
                                                         </button>
                                                     </div>
 
-                                                    <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)]">
+                                                    <div className="flex items-center justify-between p-5 sm:p-6 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)]">
                                                         <div>
-                                                            <p className="text-xs font-bold">Show Activity & Online Status</p>
-                                                            <p className="text-[11px] text-[var(--text-light)]">Allow friends to see when you are active on Egram</p>
+                                                            <p className="text-sm sm:text-base font-black">Show Activity & Online Status</p>
+                                                            <p className="text-xs sm:text-sm text-[var(--text-light)] mt-0.5">Allow friends to see when you are active on Egram</p>
                                                         </div>
                                                         <button
                                                             onClick={() => setPrivacy((prev) => ({ ...prev, showOnline: !prev.showOnline }))}
-                                                            className={`w-12 h-6 rounded-full transition-colors relative p-1 ${
+                                                            className={`w-14 h-7 min-w-[56px] rounded-full transition-colors relative p-1 ${
                                                                 privacy.showOnline ? "bg-blue-600" : "bg-zinc-700"
                                                             }`}
                                                         >
-                                                            <div className={`w-4 h-4 rounded-full bg-white transition-transform ${privacy.showOnline ? "translate-x-6" : "translate-x-0"}`} />
+                                                            <div className={`w-5 h-5 rounded-full bg-white transition-transform ${privacy.showOnline ? "translate-x-7" : "translate-x-0"}`} />
                                                         </button>
                                                     </div>
                                                 </div>
@@ -532,61 +532,61 @@ export default function SettingsPage() {
 
                                         {/* 5. Security & Sessions */}
                                         {activeTab === "security" && (
-                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-7">
                                                 <div className="border-b border-[var(--card-border)] pb-4">
-                                                    <h2 className="text-xl font-black">Security & Active Sessions</h2>
-                                                    <p className="text-xs text-[var(--text-light)] mt-0.5">Review active authentication sessions and OAuth logins</p>
+                                                    <h2 className="text-2xl font-black">Security & Active Sessions</h2>
+                                                    <p className="text-xs sm:text-sm text-[var(--text-light)] mt-1 font-medium">Review active authentication sessions and OAuth logins</p>
                                                 </div>
 
-                                                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 space-y-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <Shield className="w-5 h-5" />
-                                                        <h4 className="text-xs font-bold">Active Authenticated Session</h4>
+                                                <div className="p-5 sm:p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 space-y-3">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <Shield className="w-6 h-6" />
+                                                        <h4 className="text-sm sm:text-base font-black">Active Authenticated Session</h4>
                                                     </div>
-                                                    <p className="text-xs text-zinc-300">
-                                                        Logged in as: <strong className="text-white">{user.email}</strong>
+                                                    <p className="text-sm text-zinc-300">
+                                                        Logged in as: <strong className="text-white font-bold">{user.email}</strong>
                                                     </p>
-                                                    <p className="text-[11px] text-zinc-400">UID: {user.uid}</p>
+                                                    <p className="text-xs text-zinc-400 font-mono">UID: {user.uid}</p>
                                                 </div>
                                             </motion.div>
                                         )}
 
                                         {/* 6. Blocked Accounts */}
                                         {activeTab === "blocked" && (
-                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-7">
                                                 <div className="border-b border-[var(--card-border)] pb-4">
-                                                    <h2 className="text-xl font-black">Blocked Accounts</h2>
-                                                    <p className="text-xs text-[var(--text-light)] mt-0.5">Manage blocked users who cannot contact or follow you</p>
+                                                    <h2 className="text-2xl font-black">Blocked Accounts</h2>
+                                                    <p className="text-xs sm:text-sm text-[var(--text-light)] mt-1 font-medium">Manage blocked users who cannot contact or follow you</p>
                                                 </div>
 
                                                 <div className="text-center py-12 rounded-2xl border-2 border-dashed border-[var(--card-border)] bg-[var(--accent-bg)]">
-                                                    <UserX className="w-10 h-10 mx-auto text-zinc-500 opacity-40 mb-2" />
-                                                    <p className="text-xs font-bold text-zinc-300">No blocked users</p>
-                                                    <p className="text-[11px] text-[var(--text-light)] mt-1">You haven&apos;t blocked any learners yet.</p>
+                                                    <UserX className="w-12 h-12 mx-auto text-zinc-500 opacity-40 mb-3" />
+                                                    <p className="text-sm sm:text-base font-black text-zinc-300">No blocked users</p>
+                                                    <p className="text-xs sm:text-sm text-[var(--text-light)] mt-1">You haven&apos;t blocked any learners yet.</p>
                                                 </div>
                                             </motion.div>
                                         )}
 
                                         {/* 7. Danger Zone */}
                                         {activeTab === "control" && (
-                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-7">
                                                 <div className="border-b border-red-500/30 pb-4">
-                                                    <h2 className="text-xl font-black text-red-500">Account Danger Zone</h2>
-                                                    <p className="text-xs text-zinc-400 mt-0.5">Irreversible account actions and data deletion</p>
+                                                    <h2 className="text-2xl font-black text-red-500">Account Danger Zone</h2>
+                                                    <p className="text-xs sm:text-sm text-zinc-400 mt-1 font-medium">Irreversible account actions and data deletion</p>
                                                 </div>
 
-                                                <div className="p-5 rounded-2xl bg-red-500/10 border border-red-500/30 space-y-4">
+                                                <div className="p-6 sm:p-7 rounded-2xl bg-red-500/10 border border-red-500/30 space-y-5">
                                                     <div>
-                                                        <h4 className="text-sm font-bold text-red-400">Delete Egram Account</h4>
-                                                        <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                                                        <h4 className="text-base sm:text-lg font-black text-red-400">Delete Egram Account</h4>
+                                                        <p className="text-xs sm:text-sm text-zinc-400 mt-1.5 leading-relaxed">
                                                             Permanently delete your user profile, posts, comments, study rooms, and streak metrics. This action cannot be undone.
                                                         </p>
                                                     </div>
                                                     <button
                                                         onClick={() => setIsDeleteModalOpen(true)}
-                                                        className="flex items-center gap-2 px-5 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all shadow-lg active:scale-95"
+                                                        className="flex items-center gap-2.5 px-6 py-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm sm:text-base font-black transition-all shadow-lg active:scale-95 min-h-[52px]"
                                                     >
-                                                        <Trash2 className="w-4 h-4" /> Deactivate Account
+                                                        <Trash2 className="w-5 h-5" /> Deactivate Account
                                                     </button>
                                                 </div>
                                             </motion.div>
@@ -605,15 +605,15 @@ export default function SettingsPage() {
                     {/* Logout Modal */}
                     {isLogoutModalOpen && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-                            <div className="glass rounded-3xl p-6 max-w-sm w-full border border-[var(--card-border)] text-center space-y-4 shadow-2xl">
-                                <LogOut className="w-10 h-10 mx-auto text-purple-400" />
-                                <h3 className="text-lg font-black">Confirm Sign Out</h3>
-                                <p className="text-xs text-[var(--text-light)]">Are you sure you want to log out of Egram?</p>
-                                <div className="flex gap-3">
-                                    <button onClick={() => setIsLogoutModalOpen(false)} className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-xs font-bold text-zinc-300 hover:bg-zinc-700">
+                            <div className="glass rounded-[32px] p-7 sm:p-8 max-w-md w-full border border-[var(--card-border)] text-center space-y-5 shadow-2xl">
+                                <LogOut className="w-14 h-14 mx-auto text-purple-400" />
+                                <h3 className="text-xl sm:text-2xl font-black">Confirm Sign Out</h3>
+                                <p className="text-sm sm:text-base text-[var(--text-light)] font-medium leading-relaxed">Are you sure you want to log out of Egram?</p>
+                                <div className="flex gap-4 pt-2">
+                                    <button onClick={() => setIsLogoutModalOpen(false)} className="flex-1 py-4 px-6 rounded-2xl bg-zinc-800 text-sm sm:text-base font-bold text-zinc-300 hover:bg-zinc-700 min-h-[52px]">
                                         Cancel
                                     </button>
-                                    <button onClick={handleLogout} className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-xs font-black text-white shadow-lg">
+                                    <button onClick={handleLogout} className="flex-1 py-4 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 text-sm sm:text-base font-black text-white shadow-xl min-h-[52px]">
                                         Sign Out
                                     </button>
                                 </div>
@@ -624,23 +624,23 @@ export default function SettingsPage() {
                     {/* Delete Account Modal */}
                     {isDeleteModalOpen && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-                            <div className="glass rounded-3xl p-6 max-w-sm w-full border border-red-500/30 text-center space-y-4 shadow-2xl">
-                                <AlertTriangle className="w-10 h-10 mx-auto text-red-500" />
-                                <h3 className="text-lg font-black text-red-400">Delete Account</h3>
-                                <p className="text-xs text-zinc-300 leading-relaxed">
-                                    This action is permanent. Type <span className="font-bold text-white font-mono">DELETE MY ACCOUNT</span> below to confirm.
+                            <div className="glass rounded-[32px] p-7 sm:p-8 max-w-md w-full border border-red-500/30 text-center space-y-5 shadow-2xl">
+                                <AlertTriangle className="w-14 h-14 mx-auto text-red-500" />
+                                <h3 className="text-xl sm:text-2xl font-black text-red-400">Delete Account</h3>
+                                <p className="text-sm sm:text-base text-zinc-300 leading-relaxed">
+                                    This action is permanent. Type <span className="font-bold text-white font-mono bg-red-500/20 px-2 py-0.5 rounded-lg border border-red-500/30">DELETE MY ACCOUNT</span> below to confirm.
                                 </p>
                                 <input
                                     value={deleteConfirmText}
                                     onChange={(e) => setDeleteConfirmText(e.target.value)}
                                     placeholder="DELETE MY ACCOUNT"
-                                    className="w-full p-3 rounded-xl bg-[var(--accent-bg)] border border-red-500/40 text-center text-xs font-bold focus:outline-none text-white"
+                                    className="w-full p-4 rounded-2xl bg-[var(--accent-bg)] border border-red-500/40 text-center text-sm sm:text-base font-extrabold focus:outline-none focus:border-red-500 text-white min-h-[54px]"
                                 />
-                                <div className="flex gap-3">
-                                    <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-xs font-bold text-zinc-300 hover:bg-zinc-700">
+                                <div className="flex gap-4 pt-2">
+                                    <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 py-4 px-6 rounded-2xl bg-zinc-800 text-sm sm:text-base font-bold text-zinc-300 hover:bg-zinc-700 min-h-[52px]">
                                         Cancel
                                     </button>
-                                    <button onClick={handleDeleteAccount} className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-xs font-black text-white">
+                                    <button onClick={handleDeleteAccount} className="flex-1 py-4 px-6 rounded-2xl bg-red-600 hover:bg-red-700 text-sm sm:text-base font-black text-white shadow-xl min-h-[52px]">
                                         Delete
                                     </button>
                                 </div>
