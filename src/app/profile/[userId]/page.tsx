@@ -21,6 +21,7 @@ import { CreateCertificateModal } from "@/components/CreateCertificateModal";
 import { CertificateCard, Certificate } from "@/components/CertificateCard";
 import { useToast } from "@/components/ToastProvider";
 import { FollowListModal } from "@/components/FollowListModal";
+import { EditProfileModal } from "@/components/EditProfileModal";
 
 export default function UserProfilePage() {
     const params = useParams();
@@ -50,6 +51,7 @@ export default function UserProfilePage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
     const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false);
+    const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [isEditingBio, setIsEditingBio] = useState(false);
     const [bioText, setBioText] = useState("");
@@ -169,26 +171,46 @@ export default function UserProfilePage() {
         if (!file || !user) return;
 
         setIsUploading(true);
+
+        // Instant local optimistic preview
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            if (evt.target?.result) {
+                setProfileData((prev: any) => ({ ...prev, photoURL: evt.target?.result, avatarUrl: evt.target?.result }));
+            }
+        };
+        reader.readAsDataURL(file);
+
         try {
-            const storagePath = `avatars/${user.uid}/${Date.now()}_${file.name}`;
-            const fileRef = storageRef(storage, storagePath);
-            const snapshot = await uploadBytes(fileRef, file);
-            const downloadURL = await getDownloadURL(snapshot.ref);
+            let photoPath = "";
+            try {
+                const storagePath = `avatars/${user.uid}/${Date.now()}_${file.name}`;
+                const fileRef = storageRef(storage, storagePath);
+                const snapshot = await uploadBytes(fileRef, file);
+                photoPath = await getDownloadURL(snapshot.ref);
+            } catch {
+                const reader = new FileReader();
+                photoPath = await new Promise((resolve) => {
+                    reader.onload = (ev) => resolve(ev.target?.result as string);
+                    reader.readAsDataURL(file);
+                });
+            }
 
-            await updateProfile(user, { photoURL: downloadURL });
-            await fetch(`/api/users/${user.uid}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ avatarUrl: downloadURL })
-            });
+            if (photoPath) {
+                await updateProfile(user, { photoURL: photoPath }).catch(() => {});
+                await fetch(`/api/users/${user.uid}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ avatarUrl: photoPath })
+                });
 
-            setProfileData((prev: any) => ({ ...prev, photoURL: downloadURL }));
-            window.dispatchEvent(new Event("userProfileUpdated"));
-
-            addToast("Profile picture updated!", "success");
+                setProfileData((prev: any) => ({ ...prev, photoURL: photoPath, avatarUrl: photoPath }));
+                window.dispatchEvent(new Event("userProfileUpdated"));
+                addToast("Profile picture updated!", "success");
+            }
         } catch (error: any) {
             console.error("Upload error:", error);
-            addToast("Failed to upload image", "error");
+            addToast("Failed to update profile picture", "error");
         } finally {
             setIsUploading(false);
         }
@@ -394,15 +416,14 @@ export default function UserProfilePage() {
                                         ) : (
                                             <div className="flex items-center gap-2 flex-1 min-w-0">
                                                 <h1 className="text-2xl font-black text-[var(--text-dark)] truncate leading-tight tracking-tight">
-                                                    {profileData?.displayName || profileData?.email?.split('@')[0]}
+                                                    {profileData?.displayName || profileData?.name || profileData?.email?.split('@')[0]}
                                                 </h1>
                                                 {isOwnProfile && (
                                                     <button
-                                                        onClick={() => setIsEditingName(true)}
-                                                        className="p-2 text-zinc-400 hover:text-[var(--primary)] transition-all bg-white/5 hover:bg-white/10 rounded-lg flex-shrink-0"
-                                                        title="Edit Name"
+                                                        onClick={() => setIsEditProfileOpen(true)}
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/10 text-blue-400 hover:bg-blue-600 hover:text-white border border-blue-500/30 rounded-xl text-xs font-bold transition-all shadow-sm flex-shrink-0"
                                                     >
-                                                        <Edit3 className="w-4 h-4" />
+                                                        <Edit3 className="w-3.5 h-3.5" /> Edit Profile
                                                     </button>
                                                 )}
                                                 <button
@@ -646,6 +667,16 @@ export default function UserProfilePage() {
                                 isOpen={isCertificateModalOpen}
                                 onClose={() => setIsCertificateModalOpen(false)}
                                 user={user}
+                            />
+                            <EditProfileModal
+                                isOpen={isEditProfileOpen}
+                                onClose={() => setIsEditProfileOpen(false)}
+                                user={user}
+                                currentData={profileData}
+                                onProfileUpdated={(updated) => {
+                                    setProfileData((prev: any) => ({ ...prev, ...updated, displayName: updated.name }));
+                                    fetchProfileAndPosts();
+                                }}
                             />
                         </>
                     )}

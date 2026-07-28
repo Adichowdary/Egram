@@ -56,29 +56,30 @@ export async function POST(req: Request) {
         const body = await req.json();
         const { authorId, content, images } = body;
 
-        if (!authorId || !content) {
+        if (!authorId || (!content?.trim() && (!images || images.length === 0))) {
             return NextResponse.json(
-                { success: false, error: 'Author ID and content are required' },
+                { success: false, error: 'Author ID and content or image are required' },
                 { status: 400 }
             );
         }
 
         const db = await connectMongo();
         if (!db) {
-            return NextResponse.json({ success: true, data: { author: authorId, content, images: images || [] } }, { status: 201 });
+            return NextResponse.json({ success: true, data: { author: authorId, content: content || "", images: images || [] } }, { status: 201 });
         }
 
-        const user = await User.findOne({ firebaseUid: authorId });
+        let user = await User.findOne({ firebaseUid: authorId });
         if (!user) {
-            return NextResponse.json(
-                { success: false, error: 'Author not found' },
-                { status: 404 }
-            );
+            user = await User.create({
+                firebaseUid: authorId,
+                email: `${authorId}@egram.student`,
+                name: "Student",
+            });
         }
 
         const newPost = await Post.create({
             author: authorId,
-            content,
+            content: content || "",
             images: images || [],
         });
 

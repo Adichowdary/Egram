@@ -27,14 +27,18 @@ export async function POST(req: Request) {
             });
             return NextResponse.json({ message: "User created", user }, { status: 201 });
         } else {
-            if (!user.name || user.name.trim() === "") {
-                user.name = (displayName && !displayName.includes('@')) ? displayName : email.split("@")[0];
+            let modified = false;
+            if (displayName && displayName.trim() !== "" && !displayName.includes('@') && user.name !== displayName) {
+                user.name = displayName.trim();
+                modified = true;
             }
-
-            if (photoURL && !user.avatarUrl) {
-                user.avatarUrl = photoURL;
+            if (photoURL && photoURL.trim() !== "" && user.avatarUrl !== photoURL) {
+                user.avatarUrl = photoURL.trim();
+                modified = true;
             }
-            await user.save();
+            if (modified) {
+                await user.save();
+            }
         }
 
         return NextResponse.json({ message: "User synced", user }, { status: 200 });

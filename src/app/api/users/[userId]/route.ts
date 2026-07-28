@@ -91,7 +91,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ userId: 
             dbUpdate.$set.usernameHistory = [...currentHistory, { name: body.name, changedAt: now }];
         }
 
-        const allowedUpdates = ["bio", "name", "avatarUrl", "coverImage", "website", "skills", "allowScreenshotNotifications"];
+        const allowedUpdates = [
+            "bio", "name", "username", "avatarUrl", "coverImage", 
+            "website", "skills", "college", "branch", "year", 
+            "allowScreenshotNotifications"
+        ];
         for (const key of allowedUpdates) {
             if (body[key] !== undefined) {
                 dbUpdate.$set[key] = body[key];

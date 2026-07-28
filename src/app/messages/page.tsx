@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-
 import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { auth, storage } from "@/lib/firebase";
@@ -11,12 +10,81 @@ import { CreateGroupModal } from "@/components/CreateGroupModal";
 import { CreatePostModal } from "@/components/CreatePostModal";
 import { GroupInfoModal } from "@/components/GroupInfoModal";
 import { MobileNav } from "@/components/MobileNav";
-import { Send, User as UserIcon, MessageSquare, ImageIcon, Clock, Users, Plus, Info, Camera, Paperclip, FileText, MoreVertical, Trash } from "lucide-react";
+import { Send, User as UserIcon, MessageSquare, ImageIcon, Clock, Users, Plus, Info, Camera, Paperclip, FileText, MoreVertical, Trash, X, Download, Check, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useScreenshotDetection } from "@/hooks/useScreenshotDetection";
-
 import { useRouter } from "next/navigation";
+
+// Utility to convert file to base64 string as fallback
+const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = error => reject(error);
+    });
+};
+
+// Image compressor utility to ensure instant base64 sending without payload errors or hanging on HEIC/HEIF camera photos
+const compressImage = (file: File, maxWidth = 1000, quality = 0.75): Promise<string> => {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const dataUrl = event.target?.result as string;
+            if (!dataUrl) {
+                resolve("");
+                return;
+            }
+            if (!file.type.startsWith('image/')) {
+                resolve(dataUrl);
+                return;
+            }
+
+            const img = new Image();
+            let isResolved = false;
+
+            const timeout = setTimeout(() => {
+                if (!isResolved) {
+                    isResolved = true;
+                    resolve(dataUrl);
+                }
+            }, 500);
+
+            img.onload = () => {
+                if (isResolved) return;
+                isResolved = true;
+                clearTimeout(timeout);
+                try {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width || 800;
+                    let height = img.height || 600;
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                } catch {
+                    resolve(dataUrl);
+                }
+            };
+            img.onerror = () => {
+                if (!isResolved) {
+                    isResolved = true;
+                    clearTimeout(timeout);
+                    resolve(dataUrl);
+                }
+            };
+            img.src = dataUrl;
+        };
+        reader.onerror = () => resolve("");
+    });
+};
 
 export default function MessagesPage() {
     const [user, setUser] = useState<FirebaseUser | null>(() => typeof window !== "undefined" && auth ? auth.currentUser : null);
@@ -36,12 +104,22 @@ export default function MessagesPage() {
     const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
     const [allowScreenshotNotifications, setAllowScreenshotNotifications] = useState(true);
     const [isUploadingWallpaper, setIsUploadingWallpaper] = useState(false);
+    
+    // Media attachment state
     const [chatFile, setChatFile] = useState<File | null>(null);
-    const [isUploadingChatFile, setIsUploadingChatFile] = useState(false);
+    const [chatFilePreview, setChatFilePreview] = useState<string | null>(null);
+    const [isSending, setIsSending] = useState(false);
+    
+    // Lightbox state for viewing full-size images
+    const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
+    // Active message actions menu ID
     const [openMessageMenuId, setOpenMessageMenuId] = useState<string | null>(null);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const chatFileInputRef = useRef<HTMLInputElement>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
+    const docInputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -65,21 +143,13 @@ export default function MessagesPage() {
             const res = await fetch(`/api/users/${uid}`);
             if (res.ok) {
                 const userData = await res.json();
-
-                // Load existing wallpapers and blocked users
-                if (userData.chatWallpapers) {
-                    setChatWallpapers(userData.chatWallpapers);
-                }
-                if (userData.blockedUsers) {
-                    setBlockedUsers(userData.blockedUsers);
-                }
+                if (userData.chatWallpapers) setChatWallpapers(userData.chatWallpapers);
+                if (userData.blockedUsers) setBlockedUsers(userData.blockedUsers);
                 if (userData.allowScreenshotNotifications !== undefined) {
                     setAllowScreenshotNotifications(userData.allowScreenshotNotifications);
                 }
 
                 const contactIds = Array.from(new Set([...(userData.following || []), ...(userData.followers || [])])) as string[];
-
-                // Fetch profiles for these contact IDs in 1 single batch request
                 if (contactIds.length > 0) {
                     const contactsRes = await fetch(`/api/users?ids=${contactIds.join(',')}`);
                     if (contactsRes.ok) {
@@ -139,13 +209,13 @@ export default function MessagesPage() {
             fetchMessages(selectedUser.firebaseUid, false, true);
             const interval = setInterval(() => {
                 fetchMessages(selectedUser.firebaseUid, false, false);
-            }, 4000);
+            }, 2500);
             return () => clearInterval(interval);
         } else if (selectedGroup) {
             fetchMessages(selectedGroup._id, true, true);
             const interval = setInterval(() => {
                 fetchMessages(selectedGroup._id, true, false);
-            }, 4000);
+            }, 2500);
             return () => clearInterval(interval);
         }
     }, [selectedUser, selectedGroup]);
@@ -158,76 +228,103 @@ export default function MessagesPage() {
         const file = e.target.files?.[0];
         if (file) {
             setChatFile(file);
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (event) => setChatFilePreview(event.target?.result as string);
+                reader.readAsDataURL(file);
+            } else {
+                setChatFilePreview(null);
+            }
         }
+    };
+
+    const clearChatFile = () => {
+        setChatFile(null);
+        setChatFilePreview(null);
+        if (imageInputRef.current) imageInputRef.current.value = '';
+        if (docInputRef.current) docInputRef.current.value = '';
     };
 
     const handleDeleteMessage = async (messageId: string, action: 'deleteForMe' | 'deleteForEveryone') => {
         if (!user) return;
+        setOpenMessageMenuId(null);
+
+        setMessages(prev => prev.map(msg => {
+            const mId = msg._id || msg.id;
+            if (mId === messageId) {
+                if (action === 'deleteForEveryone') {
+                    return { ...msg, deletedForEveryone: true, content: "This message was deleted", mediaUrl: undefined, mediaType: undefined };
+                } else {
+                    return { ...msg, deletedForMe: [...(msg.deletedForMe || []), user.uid] };
+                }
+            }
+            return msg;
+        }));
+
         try {
-            const res = await fetch(`/api/messages/${messageId}`, {
+            await fetch(`/api/messages/${messageId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: user.uid, action })
             });
-
-            if (res.ok) {
-                // Optimistically update UI
-                setMessages(prev => prev.map(msg => {
-                    if (msg._id === messageId || msg.id === messageId) {
-                        if (action === 'deleteForEveryone') {
-                            return { ...msg, deletedForEveryone: true, content: "This message was deleted", mediaUrl: undefined, mediaType: undefined };
-                        } else {
-                            return { ...msg, deletedForMe: [...(msg.deletedForMe || []), user.uid] };
-                        }
-                    }
-                    return msg;
-                }));
-            }
         } catch (error) {
             console.error("Failed to delete message", error);
-        } finally {
-            setOpenMessageMenuId(null);
         }
     };
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
-        if ((!newMessage.trim() && !chatFile) || !user || (!selectedUser && !selectedGroup)) return;
+        if ((!newMessage.trim() && !chatFile) || !user || (!selectedUser && !selectedGroup) || isSending) return;
 
         const content = newMessage.trim();
+        const currentFile = chatFile;
+        const currentPreview = chatFilePreview;
+
         setNewMessage("");
+        clearChatFile();
+        setIsSending(true);
 
         const receiverId = selectedGroup ? undefined : selectedUser.firebaseUid;
         const groupId = selectedGroup ? selectedGroup._id : undefined;
 
-        // Optimistic UI update
-        const tempMessageId = Date.now().toString();
+        const tempMessageId = "temp_" + Date.now().toString();
+        const isImage = currentFile ? currentFile.type.startsWith('image/') : false;
         const tempMessage = {
+            _id: tempMessageId,
             id: tempMessageId,
             senderId: user.uid,
             receiverId,
             groupId,
-            content,
-            mediaUrl: chatFile ? URL.createObjectURL(chatFile) : undefined, // Preview
-            mediaType: chatFile ? (chatFile.type.startsWith('image/') ? 'image' : 'pdf') : undefined,
-            createdAt: new Date().toISOString()
+            content: content,
+            mediaUrl: currentPreview || (currentFile ? URL.createObjectURL(currentFile) : undefined),
+            mediaType: currentFile ? (isImage ? 'image' : 'pdf') : undefined,
+            createdAt: new Date().toISOString(),
+            isSending: true
         };
+
         setMessages(prev => [...prev, tempMessage]);
-        scrollToBottom();
+        setTimeout(scrollToBottom, 50);
 
         try {
-            let mediaUrl = undefined;
-            let mediaType = undefined;
+            let mediaUrl: string | undefined = undefined;
+            let mediaType: string | undefined = undefined;
 
-            if (chatFile) {
-                setIsUploadingChatFile(true);
-                mediaType = chatFile.type.startsWith('image/') ? 'image' : 'pdf';
-                const path = `chat_media/${user.uid}/${Date.now()}_${chatFile.name}`;
-                const fileRef = storageRef(storage, path);
-                const snapshot = await uploadBytes(fileRef, chatFile);
-                mediaUrl = await getDownloadURL(snapshot.ref);
-                setChatFile(null); // Clear file after upload
-                setIsUploadingChatFile(false);
+            if (currentFile) {
+                mediaType = isImage ? 'image' : 'pdf';
+
+                try {
+                    const path = `chat_media/${user.uid}/${Date.now()}_${currentFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+                    const fileRef = storageRef(storage, path);
+                    const snapshot = await uploadBytes(fileRef, currentFile);
+                    mediaUrl = await getDownloadURL(snapshot.ref);
+                } catch (storageErr) {
+                    console.warn("Storage upload fallback:", storageErr);
+                    if (isImage) {
+                        mediaUrl = await compressImage(currentFile);
+                    } else {
+                        mediaUrl = await fileToBase64(currentFile);
+                    }
+                }
             }
 
             const res = await fetch('/api/messages', {
@@ -242,28 +339,31 @@ export default function MessagesPage() {
                     mediaType
                 })
             });
+
             if (!res.ok) {
                 const errorData = await res.json();
                 if (res.status === 403) {
                     alert(errorData.error || "Action forbidden");
-                } else {
-                    throw new Error("Failed to send message");
                 }
+                setMessages(prev => prev.filter(m => (m._id || m.id) !== tempMessageId));
             } else {
-                // Update temp message with real DB ID if possible, or just refetch
-                fetchMessages(selectedGroup ? selectedGroup._id : selectedUser.firebaseUid, !!selectedGroup);
+                const responseData = await res.json();
+                if (responseData.data) {
+                    setMessages(prev => prev.map(m => (m._id || m.id) === tempMessageId ? responseData.data : m));
+                } else {
+                    fetchMessages(selectedGroup ? selectedGroup._id : selectedUser.firebaseUid, !!selectedGroup);
+                }
             }
         } catch (error) {
-            console.error(error);
-            // Revert optimistic update on failure
-            setMessages(prev => prev.filter(m => m.id !== tempMessageId));
-            setIsUploadingChatFile(false);
+            console.error("Send message error:", error);
+            setMessages(prev => prev.filter(m => (m._id || m.id) !== tempMessageId));
+        } finally {
+            setIsSending(false);
         }
     };
 
     const handleScreenshotDetected = async () => {
         if (!user || (!selectedUser && !selectedGroup)) return;
-
         const content = "[System]: 📸 User took a screenshot!";
         const receiverId = selectedGroup ? undefined : selectedUser.firebaseUid;
         const groupId = selectedGroup ? selectedGroup._id : undefined;
@@ -321,7 +421,6 @@ export default function MessagesPage() {
             if (res.ok) {
                 const data = await res.json();
                 setSelectedGroup(data.group);
-                // Update groups list
                 setGroups(prev => prev.map(g => g._id === data.group._id ? data.group : g));
             }
         } catch (error) {
@@ -337,29 +436,29 @@ export default function MessagesPage() {
         const targetId = selectedGroup ? selectedGroup._id : selectedUser.firebaseUid;
 
         try {
-            const storagePath = `wallpapers/${user.uid}/${targetId}/${Date.now()}_${file.name}`;
-            const fileRef = storageRef(storage, storagePath);
-            const snapshot = await uploadBytes(fileRef, file);
-            const downloadURL = await getDownloadURL(snapshot.ref);
+            let downloadURL = "";
+            try {
+                const storagePath = `wallpapers/${user.uid}/${targetId}/${Date.now()}_${file.name}`;
+                const fileRef = storageRef(storage, storagePath);
+                const snapshot = await uploadBytes(fileRef, file);
+                downloadURL = await getDownloadURL(snapshot.ref);
+            } catch (err) {
+                downloadURL = await fileToBase64(file);
+            }
 
-            // Update local state
             const newWallpapers = { ...chatWallpapers, [targetId]: downloadURL };
             setChatWallpapers(newWallpapers);
 
-            // Save to DB
             await fetch(`/api/users/${user.uid}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chatWallpapers: newWallpapers })
             });
-
         } catch (error) {
             console.error("Failed to upload wallpaper", error);
         } finally {
             setIsUploadingWallpaper(false);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
@@ -382,17 +481,17 @@ export default function MessagesPage() {
             />
 
             <main className="main-content" style={{ display: "flex", padding: "1rem" }}>
-                <div className="messaging-container card glass" style={{ display: "flex", width: "100%", height: "calc(100vh - 2rem)", borderRadius: "12px", overflow: "hidden" }}>
+                <div className="messaging-container card glass" style={{ display: "flex", width: "100%", height: "calc(100vh - 2rem)", borderRadius: "16px", overflow: "hidden" }}>
 
-                    {/* Contacts List */}
-                    <div className={`contacts-list ${activeChatId ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-[320px] border-r border-[var(--card-border)]`}>
-                        <div style={{ padding: "1.5rem", borderBottom: "1px solid var(--card-border)" }}>
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 style={{ fontSize: "1.2rem", fontWeight: 600 }}>Messages</h2>
+                    {/* Contacts & Groups Sidebar */}
+                    <div className={`contacts-list ${activeChatId ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-[320px] border-r border-[var(--card-border)] bg-zinc-950/40`}>
+                        <div style={{ padding: "1.2rem 1.5rem", borderBottom: "1px solid var(--card-border)" }}>
+                            <div className="flex items-center justify-between mb-3">
+                                <h2 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Messages</h2>
                                 {activeTab === 'groups' && (
                                     <button
                                         onClick={() => setIsCreateGroupModalOpen(true)}
-                                        className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-colors flex items-center justify-center bg-zinc-800/50 border border-zinc-700"
+                                        className="p-1.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-full transition-colors flex items-center justify-center bg-zinc-800/80 border border-zinc-700"
                                         title="Create New Group"
                                     >
                                         <Plus className="w-4 h-4" />
@@ -400,16 +499,16 @@ export default function MessagesPage() {
                                 )}
                             </div>
 
-                            {/* Tabs */}
-                            <div className="flex bg-[var(--accent-bg)] p-1 rounded-xl border border-[var(--card-border)] overflow-hidden shadow-inner mt-2">
+                            {/* Direct vs Groups Tab */}
+                            <div className="flex bg-[var(--accent-bg)] p-1 rounded-xl border border-[var(--card-border)] overflow-hidden shadow-inner">
                                 <button
-                                    className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'direct' ? 'bg-[var(--primary)] text-white shadow-md' : 'text-[var(--text-light)] hover:bg-[var(--card-hover)]'}`}
+                                    className={`flex-1 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all ${activeTab === 'direct' ? 'bg-[var(--primary)] text-white shadow-md' : 'text-[var(--text-light)] hover:bg-[var(--card-hover)]'}`}
                                     onClick={() => setActiveTab('direct')}
                                 >
                                     Direct
                                 </button>
                                 <button
-                                    className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'groups' ? 'bg-[var(--primary)] text-white shadow-md' : 'text-[var(--text-light)] hover:bg-[var(--card-hover)]'}`}
+                                    className={`flex-1 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all ${activeTab === 'groups' ? 'bg-[var(--primary)] text-white shadow-md' : 'text-[var(--text-light)] hover:bg-[var(--card-hover)]'}`}
                                     onClick={() => setActiveTab('groups')}
                                 >
                                     Groups
@@ -420,15 +519,18 @@ export default function MessagesPage() {
                         <div style={{ overflowY: "auto", flex: 1 }}>
                             {activeTab === 'direct' ? (
                                 loadingContacts ? (
-                                    <div style={{ padding: "1.5rem", textAlign: "center", color: "var(--text-light)" }}>Loading...</div>
+                                    <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-light)" }}>
+                                        <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto mb-2" />
+                                        <span className="text-xs">Loading conversations...</span>
+                                    </div>
                                 ) : conversations.length === 0 ? (
                                     <div style={{ padding: "3rem 1.5rem", textAlign: "center" }}>
-                                        <div className="w-16 h-16 rounded-full bg-[var(--primary-bg)] text-[var(--primary)] flex items-center justify-center mx-auto mb-4 border border-[var(--primary)]/20">
-                                            <Users className="w-8 h-8" />
+                                        <div className="w-14 h-14 rounded-full bg-[var(--primary-bg)] text-[var(--primary)] flex items-center justify-center mx-auto mb-4 border border-[var(--primary)]/20">
+                                            <Users className="w-7 h-7" />
                                         </div>
-                                        <h3 className="font-bold text-[var(--text-dark)] mb-2">No contacts yet</h3>
-                                        <p style={{ color: "var(--text-light)", marginBottom: "1.5rem", fontSize: "0.9rem" }}>Follow people to start messaging!</p>
-                                        <Link href="/search" className="inline-block bg-[var(--primary)] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-[var(--primary)]/30 hover:scale-[1.02] transition-transform">
+                                        <h3 className="font-bold text-[var(--text-dark)] mb-1 text-sm">No contacts yet</h3>
+                                        <p style={{ color: "var(--text-light)", marginBottom: "1.2rem", fontSize: "0.85rem" }}>Follow friends to chat!</p>
+                                        <Link href="/search" className="inline-block bg-[var(--primary)] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-[var(--primary)]/30 hover:scale-[1.02] transition-transform">
                                             Find People
                                         </Link>
                                     </div>
@@ -438,10 +540,10 @@ export default function MessagesPage() {
                                             key={contact.firebaseUid}
                                             onClick={() => { setSelectedUser(contact); setSelectedGroup(null); }}
                                             style={{
-                                                padding: "1rem 1.5rem",
+                                                padding: "0.9rem 1.2rem",
                                                 display: "flex",
                                                 alignItems: "center",
-                                                gap: "1rem",
+                                                gap: "0.9rem",
                                                 cursor: "pointer",
                                                 background: selectedUser?.firebaseUid === contact.firebaseUid ? "var(--card-hover)" : "transparent",
                                                 borderBottom: "1px solid var(--card-border)",
@@ -449,34 +551,39 @@ export default function MessagesPage() {
                                             }}
                                             className="hover:bg-[var(--card-hover)]"
                                         >
-                                            <div className="avatar cursor-pointer" style={{ width: "40px", height: "40px", flexShrink: 0 }}>
+                                            <div className="avatar cursor-pointer" style={{ width: "42px", height: "42px", flexShrink: 0 }}>
                                                 {contact.avatarUrl ? (
-                                                    <img src={contact.avatarUrl} alt={contact.name} />
+                                                    <img src={contact.avatarUrl} alt={contact.name} className="w-full h-full rounded-full object-cover" />
                                                 ) : (
-                                                    <div className="avatar-placeholder">{getInitials(contact.name)}</div>
+                                                    <div className="avatar-placeholder w-full h-full rounded-full flex items-center justify-center bg-blue-600/20 text-blue-400 font-bold border border-blue-500/30">
+                                                        {getInitials(contact.name)}
+                                                    </div>
                                                 )}
                                             </div>
-                                            <div style={{ overflow: "hidden" }}>
-                                                <h3 style={{ fontSize: "1rem", fontWeight: 500, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", color: blockedUsers.includes(contact.firebaseUid) ? 'var(--text-light)' : 'inherit' }}>
-                                                    {contact.name} {blockedUsers.includes(contact.firebaseUid) && <span className="text-[10px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded ml-1 border border-red-500/20">Blocked</span>}
+                                            <div style={{ overflow: "hidden", flex: 1 }}>
+                                                <h3 style={{ fontSize: "0.95rem", fontWeight: 600, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", color: blockedUsers.includes(contact.firebaseUid) ? 'var(--text-light)' : 'inherit' }}>
+                                                    {contact.name} {blockedUsers.includes(contact.firebaseUid) && <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded ml-1 border border-red-500/30">Blocked</span>}
                                                 </h3>
+                                                <p className="text-xs text-zinc-500 truncate">{contact.email}</p>
                                             </div>
                                         </div>
                                     ))
                                 )
                             ) : (
                                 groups.length === 0 ? (
-                                    <div style={{ padding: "1.5rem", textAlign: "center", color: "var(--text-light)" }}>You are not in any groups yet.</div>
+                                    <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-light)", fontSize: "0.85rem" }}>
+                                        You are not in any groups yet.
+                                    </div>
                                 ) : (
                                     groups.map(group => (
                                         <div
                                             key={group._id}
                                             onClick={() => { setSelectedGroup(group); setSelectedUser(null); }}
                                             style={{
-                                                padding: "1rem 1.5rem",
+                                                padding: "0.9rem 1.2rem",
                                                 display: "flex",
                                                 alignItems: "center",
-                                                gap: "1rem",
+                                                gap: "0.9rem",
                                                 cursor: "pointer",
                                                 background: selectedGroup?._id === group._id ? "var(--card-hover)" : "transparent",
                                                 borderBottom: "1px solid var(--card-border)",
@@ -484,17 +591,17 @@ export default function MessagesPage() {
                                             }}
                                             className="hover:bg-[var(--card-hover)]"
                                         >
-                                            <div className="avatar cursor-pointer" style={{ width: "40px", height: "40px", flexShrink: 0 }}>
+                                            <div className="avatar cursor-pointer" style={{ width: "42px", height: "42px", flexShrink: 0 }}>
                                                 {group.avatarUrl ? (
-                                                    <img src={group.avatarUrl} alt={group.name} />
+                                                    <img src={group.avatarUrl} alt={group.name} className="w-full h-full rounded-xl object-cover" />
                                                 ) : (
-                                                    <div className="avatar-placeholder rounded-xl bg-[var(--primary)]/20 text-[var(--primary)] border border-[var(--primary)]/30">
+                                                    <div className="avatar-placeholder w-full h-full rounded-xl bg-purple-600/20 text-purple-400 border border-purple-500/30 flex items-center justify-center">
                                                         <Users size={20} />
                                                     </div>
                                                 )}
                                             </div>
-                                            <div style={{ overflow: "hidden" }}>
-                                                <h3 style={{ fontSize: "1rem", fontWeight: 500, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{group.name}</h3>
+                                            <div style={{ overflow: "hidden", flex: 1 }}>
+                                                <h3 style={{ fontSize: "0.95rem", fontWeight: 600, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{group.name}</h3>
                                                 <p className="text-xs text-zinc-500">{group.memberIds?.length || 0} members</p>
                                             </div>
                                         </div>
@@ -504,13 +611,13 @@ export default function MessagesPage() {
                         </div>
                     </div>
 
-                    {/* Chat Area */}
+                    {/* Main Chat Conversation Area */}
                     <div
                         className={`chat-area relative ${!activeChatId ? 'hidden md:flex' : 'flex'} flex-1 flex-col`}
                         style={{
                             background: "var(--background)",
                             backgroundImage: activeChatId && chatWallpapers[activeChatId]
-                                ? `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.7)), url(${chatWallpapers[activeChatId]})`
+                                ? `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.75)), url(${chatWallpapers[activeChatId]})`
                                 : 'none',
                             backgroundSize: 'cover',
                             backgroundPosition: 'center'
@@ -518,7 +625,7 @@ export default function MessagesPage() {
                     >
                         {activeChatId ? (
                             <>
-                                {/* Custom File Input for Wallpaper */}
+                                {/* Hidden File Inputs */}
                                 <input
                                     type="file"
                                     ref={fileInputRef}
@@ -526,35 +633,51 @@ export default function MessagesPage() {
                                     accept="image/*"
                                     className="hidden"
                                 />
+                                <input
+                                    type="file"
+                                    ref={imageInputRef}
+                                    onChange={handleChatFileChange}
+                                    accept="image/*"
+                                    className="hidden"
+                                />
+                                <input
+                                    type="file"
+                                    ref={docInputRef}
+                                    onChange={handleChatFileChange}
+                                    accept="application/pdf,.doc,.docx,.txt,.zip,.rar,image/*"
+                                    className="hidden"
+                                />
 
-                                <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid var(--card-border)", display: "flex", alignItems: "center", gap: "1rem", background: "rgba(0,0,0,0.4)", backdropFilter: "blur(10px)" }}>
+                                {/* Chat Top Header */}
+                                <div style={{ padding: "0.9rem 1.2rem", borderBottom: "1px solid var(--card-border)", display: "flex", alignItems: "center", gap: "0.9rem", background: "rgba(0,0,0,0.45)", backdropFilter: "blur(12px)" }}>
                                     <button
-                                        className="md:hidden p-2 -ml-2 text-zinc-400 hover:text-white"
+                                        className="md:hidden p-2.5 -ml-2 text-zinc-300 hover:text-white min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full active:bg-white/10"
                                         onClick={() => { setSelectedGroup(null); setSelectedUser(null); }}
+                                        aria-label="Back to contacts"
                                     >
-                                        &larr;
+                                        <span className="text-xl font-black">&larr;</span>
                                     </button>
-                                    <div className="avatar cursor-pointer" style={{ width: "40px", height: "40px", flexShrink: 0 }}>
+                                    <div className="avatar cursor-pointer" style={{ width: "42px", height: "42px", flexShrink: 0 }}>
                                         {activeChatEntity.avatarUrl ? (
-                                            <img src={activeChatEntity.avatarUrl} alt={activeChatEntity.name} />
+                                            <img src={activeChatEntity.avatarUrl} alt={activeChatEntity.name} className="w-full h-full rounded-full object-cover" />
                                         ) : (
-                                            <div className={`avatar-placeholder ${selectedGroup ? 'rounded-xl bg-[var(--primary)]/20 text-[var(--primary)] border border-[var(--primary)]/30' : ''}`}>
+                                            <div className={`avatar-placeholder w-full h-full flex items-center justify-center font-bold ${selectedGroup ? 'rounded-xl bg-purple-600/20 text-purple-400 border border-purple-500/30' : 'rounded-full bg-blue-600/20 text-blue-400 border border-blue-500/30'}`}>
                                                 {selectedGroup ? <Users size={20} /> : getInitials(activeChatEntity.name)}
                                             </div>
                                         )}
                                     </div>
                                     <div>
-                                        <h3 style={{ fontSize: "1.1rem", fontWeight: 600 }}>{activeChatEntity.name}</h3>
+                                        <h3 style={{ fontSize: "1.05rem", fontWeight: 700 }}>{activeChatEntity.name}</h3>
                                         {selectedGroup && (
                                             <p className="text-xs text-zinc-400">{selectedGroup.memberIds?.length || 0} members</p>
                                         )}
                                     </div>
 
-                                    <div className="flex-1 flex justify-end gap-2">
+                                    <div className="flex-1 flex justify-end gap-1.5 items-center">
                                         {selectedGroup && (
                                             <button
                                                 onClick={() => setIsGroupInfoModalOpen(true)}
-                                                className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-colors flex items-center justify-center"
+                                                className="p-2.5 text-zinc-300 hover:text-white hover:bg-white/10 rounded-full transition-colors flex items-center justify-center min-w-[44px] min-h-[44px]"
                                                 title="Group Details & Members"
                                             >
                                                 <Info className="w-5 h-5" />
@@ -563,7 +686,7 @@ export default function MessagesPage() {
                                         {selectedUser && (
                                             <button
                                                 onClick={() => handleBlockUser(selectedUser.firebaseUid, blockedUsers.includes(selectedUser.firebaseUid) ? 'unblock' : 'block')}
-                                                className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${blockedUsers.includes(selectedUser.firebaseUid) ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'}`}
+                                                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all min-h-[40px] ${blockedUsers.includes(selectedUser.firebaseUid) ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30' : 'bg-zinc-800/80 text-zinc-300 hover:text-white hover:bg-zinc-700 border border-zinc-700'}`}
                                             >
                                                 {blockedUsers.includes(selectedUser.firebaseUid) ? 'Unblock' : 'Block'}
                                             </button>
@@ -578,7 +701,7 @@ export default function MessagesPage() {
                                                     body: JSON.stringify({ allowScreenshotNotifications: newValue })
                                                 });
                                             }}
-                                            className={`p-2 rounded-full transition-colors flex items-center justify-center ${allowScreenshotNotifications ? 'text-[var(--primary)] hover:bg-white/10' : 'text-zinc-600 hover:text-zinc-400 hover:bg-white/10'}`}
+                                            className={`p-2.5 rounded-full transition-colors flex items-center justify-center min-w-[44px] min-h-[44px] ${allowScreenshotNotifications ? 'text-[var(--primary)] hover:bg-white/10' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/10'}`}
                                             title={allowScreenshotNotifications ? "Screenshot Notifications: ON" : "Screenshot Notifications: OFF"}
                                         >
                                             <Camera className="w-5 h-5" />
@@ -586,11 +709,11 @@ export default function MessagesPage() {
                                         <button
                                             onClick={() => fileInputRef.current?.click()}
                                             disabled={isUploadingWallpaper}
-                                            className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-colors flex items-center justify-center"
+                                            className="p-2.5 text-zinc-300 hover:text-white hover:bg-white/10 rounded-full transition-colors flex items-center justify-center min-w-[44px] min-h-[44px]"
                                             title="Change Chat Wallpaper"
                                         >
                                             {isUploadingWallpaper ? (
-                                                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                             ) : (
                                                 <ImageIcon className="w-5 h-5" />
                                             )}
@@ -598,50 +721,64 @@ export default function MessagesPage() {
                                     </div>
                                 </div>
 
-                                {/* 24-hour Expiry Notice */}
-                                <div className="w-full flex justify-center mt-4 mb-2 opacity-80">
-                                    <div className="bg-zinc-900/80 backdrop-blur-sm border border-zinc-800 rounded-full px-4 py-1.5 flex items-center gap-2 text-xs text-zinc-300 shadow-md">
-                                        <Clock className="w-3.5 h-3.5 text-orange-400" />
-                                        Messages disappear 24 hours after they are sent.
+                                {/* 24-hour Expiry Banner */}
+                                <div className="w-full flex justify-center mt-3 mb-1 opacity-85">
+                                    <div className="bg-zinc-900/90 backdrop-blur-md border border-zinc-800 rounded-full px-3.5 py-1 flex items-center gap-1.5 text-[11px] font-medium text-zinc-300 shadow-md">
+                                        <Clock className="w-3.5 h-3.5 text-amber-400" />
+                                        <span>Messages expire 24 hours after being sent.</span>
                                     </div>
                                 </div>
 
-                                <div style={{ flex: 1, overflowY: "auto", padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
-                                    {messages.map((msg, index) => {
+                                {/* Messages Timeline List */}
+                                <div style={{ flex: 1, overflowY: "auto", padding: "1rem 1.2rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                                    {messages.map((msg) => {
                                         if (msg.deletedForMe && msg.deletedForMe.includes(user.uid)) return null;
 
                                         const isMine = msg.senderId === user.uid;
                                         const senderDetails = selectedGroup && !isMine ? conversations.find(c => c.firebaseUid === msg.senderId) : null;
-                                        const isMenuOpen = openMessageMenuId === (msg._id || msg.id);
+                                        const msgId = msg._id || msg.id;
+                                        const isMenuOpen = openMessageMenuId === msgId;
 
                                         return (
-                                            <div key={msg._id || msg.id} className="relative group" style={{ display: "flex", justifyContent: isMine ? "flex-end" : "flex-start", gap: "0.5rem", alignItems: "flex-end" }}>
+                                            <div
+                                                key={msgId}
+                                                className="relative group flex items-end gap-2"
+                                                style={{ justifyContent: isMine ? "flex-end" : "flex-start" }}
+                                            >
                                                 {selectedGroup && !isMine && (
-                                                    <div className="w-8 h-8 rounded-full overflow-hidden bg-zinc-700 flex-shrink-0 mb-1">
+                                                    <div className="w-7 h-7 rounded-full overflow-hidden bg-zinc-800 flex-shrink-0 mb-1 border border-zinc-700">
                                                         {senderDetails?.avatarUrl ? (
                                                             <img src={senderDetails.avatarUrl} alt={senderDetails.name} className="w-full h-full object-cover" />
                                                         ) : (
-                                                            <div className="w-full h-full flex items-center justify-center text-xs font-semibold bg-zinc-800 text-zinc-300">
+                                                            <div className="w-full h-full flex items-center justify-center text-[10px] font-bold bg-zinc-800 text-zinc-300">
                                                                 {getInitials(senderDetails?.name || '?')}
                                                             </div>
                                                         )}
                                                     </div>
                                                 )}
-                                                
+
+                                                {/* Left Action Menu (For Receiver) */}
                                                 {!isMine && (
-                                                    <div className="relative opacity-0 group-hover:opacity-100 transition-opacity mb-2">
-                                                        <button onClick={() => setOpenMessageMenuId(isMenuOpen ? null : (msg._id || msg.id))} className="text-zinc-500 hover:text-white p-1">
+                                                    <div className="relative mb-1">
+                                                        <button
+                                                            onClick={() => setOpenMessageMenuId(isMenuOpen ? null : msgId)}
+                                                            className="text-zinc-500 hover:text-white p-1 rounded-full hover:bg-zinc-800/60 transition-all opacity-80 group-hover:opacity-100"
+                                                            title="Message Options"
+                                                        >
                                                             <MoreVertical size={16} />
                                                         </button>
                                                         <AnimatePresence>
                                                             {isMenuOpen && (
                                                                 <motion.div
-                                                                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                                                    initial={{ opacity: 0, scale: 0.9, y: 5 }}
                                                                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                                                    className="absolute left-0 bottom-full mb-1 w-36 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-50 overflow-hidden flex flex-col origin-bottom-left"
+                                                                    exit={{ opacity: 0, scale: 0.9, y: 5 }}
+                                                                    className="absolute left-0 bottom-full mb-1.5 w-36 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col origin-bottom-left"
                                                                 >
-                                                                    <button onClick={() => handleDeleteMessage(msg._id || msg.id, 'deleteForMe')} className="text-left px-3 py-2 text-sm text-red-500 hover:bg-zinc-800/50 flex items-center gap-2">
+                                                                    <button
+                                                                        onClick={() => handleDeleteMessage(msgId, 'deleteForMe')}
+                                                                        className="text-left px-3.5 py-2.5 text-xs text-red-400 hover:bg-zinc-800 flex items-center gap-2 font-medium"
+                                                                    >
                                                                         <Trash size={14} /> Delete for me
                                                                     </button>
                                                                 </motion.div>
@@ -650,52 +787,107 @@ export default function MessagesPage() {
                                                     </div>
                                                 )}
 
-                                                <div style={{ maxWidth: "70%", display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start" }}>
+                                                {/* Message Bubble Container */}
+                                                <div style={{ maxWidth: "75%", display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start" }}>
                                                     {selectedGroup && !isMine && senderDetails && (
-                                                        <span className="text-xs text-zinc-400 font-medium ml-2 mb-1">{senderDetails.name}</span>
+                                                        <span className="text-[11px] text-zinc-400 font-semibold ml-2 mb-0.5">{senderDetails.name}</span>
                                                     )}
-                                                    <div style={{
-                                                        padding: "0.8rem 1.2rem",
-                                                        borderRadius: isMine ? "16px 16px 0 16px" : "16px 16px 16px 0",
-                                                        background: isMine ? "var(--primary)" : "var(--card-border)",
-                                                        color: isMine ? "white" : "var(--text-dark)",
-                                                        fontSize: "0.95rem",
-                                                        boxShadow: "0 2px 5px rgba(0,0,0,0.05)"
-                                                    }}>
+
+                                                    <div
+                                                        style={{
+                                                            padding: "0.75rem 1.1rem",
+                                                            borderRadius: isMine ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                                                            background: isMine ? "var(--primary)" : "var(--card-border)",
+                                                            color: isMine ? "white" : "var(--text-dark)",
+                                                            fontSize: "0.92rem",
+                                                            boxShadow: "0 2px 8px rgba(0,0,0,0.12)"
+                                                        }}
+                                                        className="relative group/bubble overflow-hidden"
+                                                    >
                                                         {msg.deletedForEveryone ? (
-                                                            <span className="italic opacity-70 flex items-center gap-2"><Trash size={14} /> This message was deleted</span>
+                                                            <span className="italic opacity-70 flex items-center gap-2 text-xs">
+                                                                <Trash size={13} /> This message was deleted
+                                                            </span>
                                                         ) : (
                                                             <>
+                                                                {/* Image Attachment */}
                                                                 {msg.mediaUrl && msg.mediaType === 'image' && (
-                                                                    <img src={msg.mediaUrl} alt="attachment" className="max-w-full rounded-lg mb-2 object-contain bg-black/20" style={{ maxHeight: '200px' }} loading="lazy" />
+                                                                    <div className="relative mb-2 rounded-xl overflow-hidden cursor-pointer group/img max-w-sm">
+                                                                        <img
+                                                                            src={msg.mediaUrl}
+                                                                            alt="attachment"
+                                                                            className="max-w-full rounded-xl object-cover hover:scale-[1.02] transition-transform duration-200 bg-black/20"
+                                                                            style={{ maxHeight: '260px' }}
+                                                                            onClick={() => setLightboxImage(msg.mediaUrl)}
+                                                                            loading="lazy"
+                                                                        />
+                                                                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                                                            <span className="text-xs font-semibold text-white bg-black/60 px-2.5 py-1 rounded-full backdrop-blur-sm">Click to view</span>
+                                                                        </div>
+                                                                    </div>
                                                                 )}
-                                                                {msg.mediaUrl && msg.mediaType === 'pdf' && (
-                                                                    <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 bg-black/20 rounded-lg mb-2 hover:bg-black/30 transition-colors border border-white/10">
-                                                                        <FileText size={24} className={isMine ? "text-white" : "text-red-400"} />
-                                                                        <span className="text-sm font-medium underline">View PDF Document</span>
+
+                                                                {/* File / Document Attachment */}
+                                                                {msg.mediaUrl && msg.mediaType !== 'image' && (
+                                                                    <a
+                                                                        href={msg.mediaUrl}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        download
+                                                                        className="flex items-center gap-2.5 p-3 bg-black/25 rounded-xl mb-2 hover:bg-black/40 transition-colors border border-white/10 text-white"
+                                                                    >
+                                                                        <FileText size={22} className={isMine ? "text-white" : "text-blue-400"} />
+                                                                        <div className="flex flex-col overflow-hidden pr-2">
+                                                                            <span className="text-xs font-bold truncate">Shared File / Document</span>
+                                                                            <span className="text-[10px] opacity-80 flex items-center gap-1 underline">
+                                                                                <Download size={11} /> Click to download file
+                                                                            </span>
+                                                                        </div>
                                                                     </a>
                                                                 )}
-                                                                {msg.content}
+
+                                                                {/* Message Text Content */}
+                                                                {msg.content && <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>}
+
+                                                                {/* Sending Indicator */}
+                                                                {msg.isSending && (
+                                                                    <div className="flex items-center gap-1 justify-end mt-1 text-[10px] opacity-75">
+                                                                        <span>Sending...</span>
+                                                                    </div>
+                                                                )}
                                                             </>
                                                         )}
                                                     </div>
                                                 </div>
 
+                                                {/* Right Action Menu (For Sender) */}
                                                 {isMine && (
-                                                    <div className="relative opacity-0 group-hover:opacity-100 transition-opacity mb-2">
-                                                        <button onClick={() => setOpenMessageMenuId(isMenuOpen ? null : (msg._id || msg.id))} className="text-zinc-500 hover:text-white p-1">
+                                                    <div className="relative mb-1">
+                                                        <button
+                                                            onClick={() => setOpenMessageMenuId(isMenuOpen ? null : msgId)}
+                                                            className="text-zinc-500 hover:text-white p-1 rounded-full hover:bg-zinc-800/60 transition-all opacity-80 group-hover:opacity-100"
+                                                            title="Message Options"
+                                                        >
                                                             <MoreVertical size={16} />
                                                         </button>
                                                         <AnimatePresence>
                                                             {isMenuOpen && (
                                                                 <motion.div
-                                                                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                                                    initial={{ opacity: 0, scale: 0.9, y: 5 }}
                                                                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                                                    className="absolute right-0 bottom-full mb-1 w-44 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl z-50 overflow-hidden flex flex-col origin-bottom-right"
+                                                                    exit={{ opacity: 0, scale: 0.9, y: 5 }}
+                                                                    className="absolute right-0 bottom-full mb-1.5 w-44 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col origin-bottom-right"
                                                                 >
-                                                                    <button onClick={() => handleDeleteMessage(msg._id || msg.id, 'deleteForMe')} className="text-left px-3 py-2 text-sm text-white hover:bg-zinc-800/50">Delete for me</button>
-                                                                    <button onClick={() => handleDeleteMessage(msg._id || msg.id, 'deleteForEveryone')} className="text-left px-3 py-2 text-sm text-red-500 hover:bg-zinc-800/50 flex items-center gap-2">
+                                                                    <button
+                                                                        onClick={() => handleDeleteMessage(msgId, 'deleteForMe')}
+                                                                        className="text-left px-3.5 py-2.5 text-xs text-zinc-200 hover:bg-zinc-800 font-medium"
+                                                                    >
+                                                                        Delete for me
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDeleteMessage(msgId, 'deleteForEveryone')}
+                                                                        className="text-left px-3.5 py-2.5 text-xs text-red-400 hover:bg-zinc-800 flex items-center gap-2 border-t border-zinc-800/80 font-medium"
+                                                                    >
                                                                         <Trash size={14} /> Delete for everyone
                                                                     </button>
                                                                 </motion.div>
@@ -709,87 +901,137 @@ export default function MessagesPage() {
                                     <div ref={messagesEndRef} />
                                 </div>
 
-                                <div style={{ padding: "1rem 1.5rem", borderTop: "1px solid var(--card-border)", background: "rgba(0,0,0,0.4)", backdropFilter: "blur(10px)" }}>
+                                {/* Interactive Message Input Bar */}
+                                <div style={{ padding: "0.8rem 1.2rem", borderTop: "1px solid var(--card-border)", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(12px)" }}>
                                     {selectedUser && blockedUsers.includes(selectedUser.firebaseUid) ? (
-                                        <div className="text-center py-2 text-sm text-zinc-500 italic">
+                                        <div className="text-center py-2 text-xs text-red-400 italic bg-red-500/10 border border-red-500/20 rounded-xl">
                                             You have blocked this user. Unblock to send messages.
                                         </div>
                                     ) : (
-                                        <form onSubmit={handleSendMessage} style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-                                            <div className="flex gap-2 items-center bg-[var(--background)] rounded-full px-2 border border-[var(--card-border)] flex-1">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => chatFileInputRef.current?.click()}
-                                                    className={`p-2 rounded-full transition-colors flex items-center justify-center ${chatFile ? 'text-blue-500' : 'text-zinc-500 hover:text-white'}`}
+                                        <form onSubmit={handleSendMessage} className="flex flex-col gap-2">
+                                            
+                                            {/* Attached Media Preview Box */}
+                                            {chatFile && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: 10 }}
+                                                    className="flex items-center justify-between p-2.5 bg-zinc-900/90 border border-blue-500/40 rounded-2xl shadow-lg"
                                                 >
-                                                    <Paperclip className="w-5 h-5" />
-                                                </button>
-                                                <input
-                                                    type="file"
-                                                    ref={chatFileInputRef}
-                                                    onChange={handleChatFileChange}
-                                                    accept="image/*,application/pdf"
-                                                    className="hidden"
-                                                />
-                                                {chatFile ? (
-                                                    <div className="flex-1 text-sm text-blue-400 font-medium truncate py-2 flex items-center gap-2">
-                                                        {chatFile.type.startsWith('image/') ? <ImageIcon size={16} /> : <FileText size={16} />}
-                                                        <span className="truncate">{chatFile.name}</span>
-                                                        <button type="button" onClick={() => setChatFile(null)} className="text-zinc-500 hover:text-red-500 ml-auto">✕</button>
+                                                    <div className="flex items-center gap-3 overflow-hidden">
+                                                        {chatFilePreview ? (
+                                                            <img src={chatFilePreview} alt="Preview" className="w-12 h-12 rounded-xl object-cover border border-blue-500/30 flex-shrink-0" />
+                                                        ) : (
+                                                            <div className="w-12 h-12 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 flex-shrink-0">
+                                                                <FileText size={22} />
+                                                            </div>
+                                                        )}
+                                                        <div className="flex flex-col overflow-hidden">
+                                                            <span className="text-xs font-semibold text-white truncate">{chatFile.name}</span>
+                                                            <span className="text-[10px] text-zinc-400">{(chatFile.size / 1024).toFixed(1)} KB • Ready to send</span>
+                                                        </div>
                                                     </div>
-                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={clearChatFile}
+                                                        className="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-zinc-800 rounded-full transition-colors ml-2"
+                                                        title="Remove attachment"
+                                                    >
+                                                        <X size={18} />
+                                                    </button>
+                                                </motion.div>
+                                            )}
+
+                                            {/* Text Input Row */}
+                                            <div className="flex gap-2 items-center">
+                                                <div className="flex gap-1 items-center bg-[var(--background)] rounded-2xl px-3 border border-[var(--card-border)] flex-1 shadow-inner">
+                                                    
+                                                    {/* Image Attachment Icon Button */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => imageInputRef.current?.click()}
+                                                        className="p-2 text-zinc-400 hover:text-blue-400 rounded-full transition-colors flex items-center justify-center"
+                                                        title="Attach Image"
+                                                    >
+                                                        <ImageIcon className="w-5 h-5" />
+                                                    </button>
+
+                                                    {/* Document Attachment Icon Button */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => docInputRef.current?.click()}
+                                                        className="p-2 text-zinc-400 hover:text-purple-400 rounded-full transition-colors flex items-center justify-center"
+                                                        title="Attach PDF Document"
+                                                    >
+                                                        <Paperclip className="w-5 h-5" />
+                                                    </button>
+
                                                     <input
                                                         type="text"
                                                         value={newMessage}
                                                         onChange={(e) => setNewMessage(e.target.value)}
-                                                        placeholder="Type a message..."
-                                                        style={{
-                                                            flex: 1,
-                                                            padding: "0.8rem 0.5rem",
-                                                            background: "transparent",
-                                                            color: "var(--text-dark)",
-                                                            outline: "none",
-                                                            border: "none"
-                                                        }}
+                                                        placeholder={chatFile ? "Add a caption..." : "Type a message..."}
+                                                        className="flex-1 py-3 px-2 bg-transparent text-[var(--text-dark)] outline-none border-none text-xs sm:text-sm placeholder:text-zinc-500"
                                                     />
-                                                )}
+                                                </div>
+
+                                                <button
+                                                    type="submit"
+                                                    disabled={(!newMessage.trim() && !chatFile) || isSending}
+                                                    className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 shadow-md ${
+                                                        (newMessage.trim() || chatFile) && !isSending
+                                                            ? "bg-[var(--primary)] text-white hover:scale-105 active:scale-95 shadow-blue-500/30"
+                                                            : "bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700"
+                                                    }`}
+                                                >
+                                                    {isSending ? (
+                                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                    ) : (
+                                                        <Send size={18} />
+                                                    )}
+                                                </button>
                                             </div>
-                                            <button
-                                                type="submit"
-                                                disabled={(!newMessage.trim() && !chatFile) || isUploadingChatFile}
-                                                style={{
-                                                    background: (newMessage.trim() || chatFile) ? "var(--primary)" : "var(--card-border)",
-                                                    color: (newMessage.trim() || chatFile) ? "white" : "var(--text-light)",
-                                                    border: "none",
-                                                    borderRadius: "50%",
-                                                    width: "45px",
-                                                    height: "45px",
-                                                    display: "flex",
-                                                    justifyContent: "center",
-                                                    alignItems: "center",
-                                                    cursor: (newMessage.trim() || chatFile) ? "pointer" : "not-allowed",
-                                                    transition: "all 0.2s"
-                                                }}
-                                            >
-                                                {isUploadingChatFile ? (
-                                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                ) : (
-                                                    <Send size={20} />
-                                                )}
-                                            </button>
+
                                         </form>
                                     )}
                                 </div>
                             </>
                         ) : (
                             <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", color: "var(--text-light)" }}>
-                                <MessageSquare size={48} style={{ marginBottom: "1rem", opacity: 0.5 }} />
-                                <h2>Select a conversation to start messaging</h2>
+                                <MessageSquare size={48} style={{ marginBottom: "1rem", opacity: 0.4 }} />
+                                <h2 className="text-base font-semibold">Select a conversation or group to start messaging</h2>
                             </div>
                         )}
                     </div>
+
                 </div>
             </main>
+
+            {/* Lightbox Image Preview Modal */}
+            <AnimatePresence>
+                {lightboxImage && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setLightboxImage(null)}
+                        className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4"
+                    >
+                        <button
+                            onClick={() => setLightboxImage(null)}
+                            className="absolute top-4 right-4 p-3 text-white hover:bg-white/10 rounded-full transition-colors z-50"
+                        >
+                            <X size={28} />
+                        </button>
+                        <img
+                            src={lightboxImage}
+                            alt="Enlarged preview"
+                            className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <CreateMeetModal
                 isOpen={isModalOpen}

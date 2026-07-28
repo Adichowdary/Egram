@@ -17,7 +17,7 @@ const MessageSchema: Schema = new Schema({
     senderId: { type: String, required: true, index: true },
     receiverId: { type: String, index: true },
     groupId: { type: String, index: true },
-    content: { type: String, required: true },
+    content: { type: String, default: "" },
     mediaUrl: { type: String },
     mediaType: { type: String, enum: ['image', 'pdf'] },
     deletedForEveryone: { type: Boolean, default: false },

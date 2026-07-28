@@ -78,8 +78,8 @@ export function CreateGroupModal({ isOpen, onClose, user, contacts, onGroupCreat
                             type="text"
                             value={groupName}
                             onChange={(e) => setGroupName(e.target.value)}
-                            placeholder="Awesome Team..."
-                            className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition-all"
+                            placeholder="Enter group name..."
+                            className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl px-4 py-3 text-white text-xs sm:text-sm font-medium placeholder:text-zinc-500 placeholder:font-normal outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition-all truncate"
                         />
                     </div>
 

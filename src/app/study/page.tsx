@@ -125,8 +125,8 @@ export default function StudyPage() {
                         getInitials={getInitials}
                     />
 
-                    <main className="main-content flex-col items-center px-4 py-8">
-                        <div className="w-full max-w-[620px] mx-auto space-y-8">
+                    <main className="main-content">
+                        <div className="feed-column">
                             
                             {/* Page Header */}
                             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
@@ -275,9 +275,9 @@ export default function StudyPage() {
                             </div>
 
                         </div>
-                    </main>
 
-                    <RightSidebar user={user} handleSignOut={() => auth.signOut()} getInitials={getInitials} />
+                        <RightSidebar user={user} handleSignOut={() => auth.signOut()} getInitials={getInitials} />
+                    </main>
                     <MobileNav onOpenCreatePost={() => setIsPostModalOpen(true)} onOpenCreateMeet={() => setIsModalOpen(true)} currentUserId={user.uid} />
 
                     <CreateMeetModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} user={user} getInitials={getInitials} />

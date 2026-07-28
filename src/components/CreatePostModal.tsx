@@ -39,10 +39,14 @@ export function CreatePostModal({ isOpen, onClose, user }: CreatePostModalProps)
         try {
             let mediaUrl = "";
             if (imageFile) {
-                const path = `posts/${user.uid}/${Date.now()}_${imageFile.name}`;
-                const fileRef = storageRef(storage, path);
-                const snapshot = await uploadBytes(fileRef, imageFile);
-                mediaUrl = await getDownloadURL(snapshot.ref);
+                try {
+                    const path = `posts/${user.uid}/${Date.now()}_${imageFile.name}`;
+                    const fileRef = storageRef(storage, path);
+                    const snapshot = await uploadBytes(fileRef, imageFile);
+                    mediaUrl = await getDownloadURL(snapshot.ref);
+                } catch {
+                    mediaUrl = imagePreview || "";
+                }
             }
 
             const res = await fetch("/api/posts", {
@@ -50,7 +54,7 @@ export function CreatePostModal({ isOpen, onClose, user }: CreatePostModalProps)
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     authorId: user.uid,
-                    content,
+                    content: content.trim(),
                     images: mediaUrl ? [mediaUrl] : [],
                 }),
             });

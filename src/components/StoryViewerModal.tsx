@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Heart } from "lucide-react";
 
 interface StoryViewerModalProps {
     storyUsers: any[];
@@ -13,6 +13,8 @@ export function StoryViewerModal({ storyUsers, initialIndex, onClose }: StoryVie
     const [userIndex, setUserIndex] = useState(initialIndex);
     const [storyIndex, setStoryIndex] = useState(0);
     const [progress, setProgress] = useState(0);
+    const [isLiked, setIsLiked] = useState(false);
+    const [likesCount, setLikesCount] = useState(0);
 
     const currentUserStory = storyUsers[userIndex];
     const currentStory = currentUserStory?.stories[storyIndex];
@@ -98,25 +100,50 @@ export function StoryViewerModal({ storyUsers, initialIndex, onClose }: StoryVie
                 {/* Navigation Touch Areas */}
                 <button
                     onClick={handlePrev}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2.5 rounded-full bg-black/50 text-white hover:bg-black/80 transition-colors backdrop-blur-md"
                 >
                     <ChevronLeft className="w-6 h-6" />
                 </button>
                 <button
                     onClick={handleNext}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2.5 rounded-full bg-black/50 text-white hover:bg-black/80 transition-colors backdrop-blur-md"
                 >
                     <ChevronRight className="w-6 h-6" />
                 </button>
 
-                {/* Caption Footer */}
-                {currentStory.caption && (
-                    <div className="relative z-10 p-5 text-center">
-                        <p className="text-xs font-bold text-white bg-black/60 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10 inline-block">
+                {/* Bottom Footer Actions (Caption & Like Button) */}
+                <div className="relative z-20 p-4 sm:p-5 space-y-3 flex flex-col items-center">
+                    {currentStory.caption && (
+                        <p className="text-xs font-bold text-white bg-black/70 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10 text-center max-w-[85%]">
                             {currentStory.caption}
                         </p>
+                    )}
+
+                    {/* Interactive Story Like Symbol */}
+                    <div className="flex items-center justify-between w-full pt-1">
+                        <button
+                            onClick={() => {
+                                setIsLiked(!isLiked);
+                                setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+                            }}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-full backdrop-blur-xl border transition-all active:scale-95 ${
+                                isLiked
+                                    ? "bg-red-500/20 border-red-500/50 text-red-500 shadow-lg shadow-red-500/20"
+                                    : "bg-black/60 border-white/20 text-white hover:bg-black/80"
+                            }`}
+                        >
+                            <Heart className={`w-5 h-5 transition-transform ${isLiked ? "fill-red-500 scale-110" : ""}`} />
+                            <span className="text-xs font-extrabold">{likesCount} {likesCount === 1 ? 'Like' : 'Likes'}</span>
+                        </button>
+
+                        <button
+                            onClick={handleNext}
+                            className="px-4 py-2.5 rounded-full bg-white/10 border border-white/20 text-white text-xs font-bold hover:bg-white/20 backdrop-blur-md transition-all"
+                        >
+                            Next Story →
+                        </button>
                     </div>
-                )}
+                </div>
             </div>
         </div>
     );

@@ -104,29 +104,50 @@ export default function SearchPage() {
     const toggleFollow = async (targetUserId: string) => {
         if (!user) return;
 
+        const isCurrentlyFollowing = followingIds.has(targetUserId);
+
+        // Optimistic update
+        setFollowingIds(prev => {
+            const next = new Set(prev);
+            if (isCurrentlyFollowing) {
+                next.delete(targetUserId);
+            } else {
+                next.add(targetUserId);
+            }
+            return next;
+        });
+
         try {
             const res = await fetch(`/api/users/${targetUserId}/follow`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ followerId: user.uid }),
+                body: JSON.stringify({ currentUserId: user.uid }),
             });
-
             if (res.ok) {
                 const data = await res.json();
-                const newFollowingIds = new Set(followingIds);
-                if (data.isFollowing) {
-                    newFollowingIds.add(targetUserId);
-                    addToast("Following", "success");
-                } else {
-                    newFollowingIds.delete(targetUserId);
-                    addToast("Unfollowed", "success");
-                }
-                setFollowingIds(newFollowingIds);
+                setFollowingIds(prev => {
+                    const next = new Set(prev);
+                    if (data.isFollowing) {
+                        next.add(targetUserId);
+                    } else {
+                        next.delete(targetUserId);
+                    }
+                    return next;
+                });
             } else {
-                addToast("Failed to update follow status", "error");
+                throw new Error("Failed to update follow status");
             }
-        } catch (error: any) {
-            console.error("Follow error:", error);
+        } catch {
+            // Revert on error
+            setFollowingIds(prev => {
+                const next = new Set(prev);
+                if (isCurrentlyFollowing) {
+                    next.add(targetUserId);
+                } else {
+                    next.delete(targetUserId);
+                }
+                return next;
+            });
             addToast("Failed to update follow status", "error");
         }
     };
@@ -154,7 +175,7 @@ export default function SearchPage() {
                     />
 
                     <main className="main-content">
-                        <div className="feed-column w-full max-w-[620px] py-10 px-6 mx-auto flex flex-col" style={{ color: "var(--text-dark)" }}>
+                        <div className="feed-column">
 
                             {/* === Header === */}
                             <motion.div
@@ -184,7 +205,7 @@ export default function SearchPage() {
                             >
                                 <form
                                     onSubmit={handleSearch}
-                                    className="relative rounded-2xl transition-all duration-200"
+                                    className="relative flex items-center rounded-2xl transition-all duration-200"
                                     style={{
                                         background: "var(--card-bg)",
                                         border: `2px solid ${isFocused ? "var(--primary)" : "var(--card-border)"}`,
@@ -192,7 +213,7 @@ export default function SearchPage() {
                                     }}
                                 >
                                     <SearchIcon
-                                        className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none transition-colors"
+                                        className="absolute left-4.5 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none transition-colors z-10"
                                         style={{ color: isFocused ? "var(--primary)" : "var(--text-light)" }}
                                     />
                                     <input
@@ -201,21 +222,21 @@ export default function SearchPage() {
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         onFocus={() => setIsFocused(true)}
                                         onBlur={() => setIsFocused(false)}
-                                        placeholder="Search for friends by name or email..."
+                                        placeholder="Search learners by name or email..."
                                         style={{
                                             color: "var(--text-dark)",
                                             background: "transparent",
                                         }}
-                                        className="w-full rounded-2xl py-4 pl-14 pr-24 text-base font-medium focus:outline-none transition-all"
+                                        className="w-full rounded-2xl py-3.5 pl-12 pr-20 text-xs sm:text-sm font-medium outline-none transition-all placeholder:text-[var(--text-light)] placeholder:opacity-60 placeholder:font-normal truncate"
                                     />
                                     {isSearching ? (
-                                        <div className="absolute right-5 top-1/2 -translate-y-1/2">
-                                            <Loader2 className="animate-spin w-5 h-5" style={{ color: "var(--primary)" }} />
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10">
+                                            <Loader2 className="animate-spin w-4 h-4" style={{ color: "var(--primary)" }} />
                                         </div>
                                     ) : hasQuery ? (
                                         <button
                                             type="submit"
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black px-3 py-1.5 rounded-xl transition-all"
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold px-3 py-1.5 rounded-xl transition-all z-10"
                                             style={{ background: "var(--primary)", color: "#fff" }}
                                         >
                                             Search

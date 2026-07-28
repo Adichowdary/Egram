@@ -16,13 +16,13 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
         
-        const finalContent = content || (mediaUrl ? '' : undefined);
-        if (finalContent === undefined) {
+        const finalContent = content !== undefined && content !== null ? content : '';
+        if (!finalContent && !mediaUrl) {
              return NextResponse.json({ error: "Message must have content or media" }, { status: 400 });
         }
 
         if (!db) {
-            return NextResponse.json({ success: true, data: { senderId, receiverId, groupId, content: finalContent } }, { status: 201 });
+            return NextResponse.json({ success: true, data: { senderId, receiverId, groupId, content: finalContent, mediaUrl, mediaType } }, { status: 201 });
         }
 
         if (receiverId) {
@@ -40,34 +40,37 @@ export async function POST(req: Request) {
 
         const newMessage = await Message.create({ senderId, receiverId, groupId, content: finalContent, mediaUrl, mediaType });
 
+        // Asynchronous non-blocking notifications for speed
         if (groupId) {
-            const group = await Group.findById(groupId).select('memberIds name').lean();
-            if (group && group.memberIds) {
-                const notifyPromises = group.memberIds
-                    .filter((id: string) => id !== senderId)
-                    .map((memberId: string) =>
-                        Notification.create({
-                            userId: memberId,
-                            type: 'group_message',
-                            sourceUserId: senderId,
-                            message: `New message in ${group.name}`
-                        })
-                    );
-                await Promise.all(notifyPromises);
-            }
+            Group.findById(groupId).select('memberIds name').lean().then(group => {
+                if (group && group.memberIds) {
+                    const notifyPromises = group.memberIds
+                        .filter((id: string) => id !== senderId)
+                        .map((memberId: string) =>
+                            Notification.create({
+                                userId: memberId,
+                                type: 'group_message',
+                                sourceUserId: senderId,
+                                message: `New message in ${group.name}`
+                            })
+                        );
+                    Promise.all(notifyPromises).catch(err => console.error("Group notification error:", err));
+                }
+            }).catch(err => console.error("Error finding group for notify:", err));
         } else if (receiverId) {
-            await Notification.create({
+            const notificationMsg = finalContent.length > 50 ? finalContent.substring(0, 47) + '...' : (finalContent || 'Sent a photo');
+            Notification.create({
                 userId: receiverId,
                 type: 'message',
                 sourceUserId: senderId,
-                message: content.length > 50 ? content.substring(0, 47) + '...' : content
-            });
+                message: notificationMsg
+            }).catch(err => console.error("Notification create error:", err));
         }
 
         return NextResponse.json({ success: true, data: newMessage }, { status: 201 });
     } catch (error) {
         console.error("Error sending message:", error);
-        return NextResponse.json({ success: true, message: "Message sent" }, { status: 200 });
+        return NextResponse.json({ success: false, error: "Failed to send message" }, { status: 500 });
     }
 }
 

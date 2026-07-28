@@ -38,10 +38,11 @@ export function usePosts(user: User) {
     const addComment = async (postId: string, text: string) => {
         setIsSubmitting(true);
         try {
+            const userName = user.displayName || user.email?.split('@')[0] || "User";
             const res = await fetch(`/api/posts/${postId}/comment`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId: user.uid, text })
+                body: JSON.stringify({ userId: user.uid, text, userName })
             });
 
             if (!res.ok) throw new Error("Failed to add comment");
@@ -54,6 +55,33 @@ export function usePosts(user: User) {
             throw error;
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const fetchComments = async (postId: string) => {
+        try {
+            const res = await fetch(`/api/posts/${postId}/comment`);
+            if (!res || !res.ok) return [];
+            const data = await res.json();
+            return data.comments || [];
+        } catch (error) {
+            console.error("Error fetching comments:", error);
+            return [];
+        }
+    };
+
+    const deleteComment = async (postId: string, commentId: string) => {
+        try {
+            const res = await fetch(`/api/posts/${postId}/comment?commentId=${commentId}&userId=${user.uid}`, {
+                method: "DELETE",
+            });
+            if (!res.ok) throw new Error("Failed to delete comment");
+            const data = await res.json();
+            addToast("Comment deleted", "success");
+            return data.comments || [];
+        } catch (error) {
+            addToast("Failed to delete comment", "error");
+            throw error;
         }
     };
 
@@ -74,6 +102,8 @@ export function usePosts(user: User) {
     return {
         toggleLike,
         addComment,
+        fetchComments,
+        deleteComment,
         deletePost,
         isSubmitting
     };

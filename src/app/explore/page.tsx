@@ -63,14 +63,14 @@ export default function ExplorePage() {
                             <p className="text-[var(--text-light)] mt-2 font-medium">Join live study sessions and collaborate with others in real-time.</p>
                         </div>
 
-                        <div className="relative group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-light)] group-focus-within:text-[var(--primary)] transition-colors opacity-50" />
+                        <div className="relative flex items-center group">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-light)] group-focus-within:text-[var(--primary)] transition-colors pointer-events-none z-10 opacity-60" />
                             <input
                                 type="text"
-                                placeholder="Search by topic or host..."
+                                placeholder="Search topic or host..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl pl-10 pr-4 py-2.5 w-full md:w-80 text-[var(--text-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium"
+                                className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl pl-10 pr-4 py-2.5 w-full md:w-80 text-xs sm:text-sm text-[var(--text-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium placeholder:text-[var(--text-light)] placeholder:opacity-60 placeholder:font-normal truncate"
                             />
                         </div>
                     </div>

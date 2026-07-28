@@ -190,13 +190,13 @@ export function FollowListModal({
                     {/* Search input */}
                     <div className="p-3 border-b border-[var(--card-border)] bg-[var(--card-bg)]">
                         <div className="relative flex items-center">
-                            <Search className="w-4 h-4 absolute left-3.5 text-zinc-400" />
+                            <Search className="w-4 h-4 absolute left-3.5 text-zinc-400 pointer-events-none z-10 opacity-60" />
                             <input
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder={`Search ${activeTab}...`}
-                                className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)] text-xs rounded-xl pl-9 pr-4 py-2.5 focus:outline-none focus:border-[var(--primary)]"
+                                className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)] text-xs rounded-xl pl-10 pr-8 py-2.5 focus:outline-none focus:border-[var(--primary)] font-medium placeholder:text-[var(--text-light)] placeholder:opacity-60 placeholder:font-normal truncate"
                             />
                             {searchQuery && (
                                 <button

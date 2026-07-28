@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Camera } from "lucide-react";
 import { StoryViewerModal } from "@/components/StoryViewerModal";
+import { CreateStoryModal } from "@/components/CreateStoryModal";
 
 interface StoryUser {
     id: string;
@@ -21,19 +22,23 @@ export function StoriesBar({ currentUser, getInitials }: StoriesBarProps) {
     const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
     const [realStories, setRealStories] = useState<StoryUser[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isCreateStoryOpen, setIsCreateStoryOpen] = useState(false);
+
+    const fetchStories = async () => {
+        try {
+            const res = await fetch("/api/stories");
+            if (res.ok) {
+                const data = await res.json();
+                setRealStories(data.stories || []);
+            }
+        } catch (e) {
+            console.error("Error fetching real stories:", e);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        // Fetch real active 24-hour stories from database if present
-        const fetchStories = async () => {
-            try {
-                // Currently database returns real stories array if available
-                setRealStories([]);
-            } catch (e) {
-                console.error("Error fetching real stories:", e);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchStories();
     }, []);
 
@@ -43,17 +48,24 @@ export function StoriesBar({ currentUser, getInitials }: StoriesBarProps) {
                 <div className="flex items-center gap-4 px-1">
                     
                     {/* Add Story Button */}
-                    <div className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group">
+                    <div
+                        onClick={() => setIsCreateStoryOpen(true)}
+                        className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group"
+                    >
                         <div className="w-16 h-16 rounded-full bg-zinc-900 border-2 border-dashed border-purple-500/50 flex items-center justify-center relative group-hover:scale-105 transition-transform">
-                            <span className="text-sm font-black text-white">{getInitials(currentUser?.displayName || currentUser?.email)}</span>
-                            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[var(--primary)] text-white flex items-center justify-center text-xs font-black shadow-lg">
+                            {currentUser?.photoURL ? (
+                                <img src={currentUser.photoURL} alt="Avatar" className="w-full h-full rounded-full object-cover p-0.5" />
+                            ) : (
+                                <span className="text-sm font-black text-white">{getInitials(currentUser?.displayName || currentUser?.email)}</span>
+                            )}
+                            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-black shadow-lg border-2 border-zinc-900">
                                 <Plus className="w-3.5 h-3.5" />
                             </div>
                         </div>
                         <span className="text-[10px] font-bold text-zinc-400 group-hover:text-white">Your Story</span>
                     </div>
 
-                    {/* Real Active User Stories or Clean Empty State */}
+                    {/* Real Active User Stories */}
                     {realStories.length > 0 ? (
                         realStories.map((storyUser, idx) => (
                             <div
@@ -67,7 +79,11 @@ export function StoriesBar({ currentUser, getInitials }: StoriesBarProps) {
                                         : "bg-zinc-700"
                                 }`}>
                                     <div className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center border-2 border-zinc-900 overflow-hidden">
-                                        <span className="text-xs font-black text-white">{getInitials(storyUser.name)}</span>
+                                        {storyUser.avatar ? (
+                                            <img src={storyUser.avatar} alt={storyUser.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <span className="text-xs font-black text-white">{getInitials(storyUser.name)}</span>
+                                        )}
                                     </div>
                                 </div>
                                 <span className="text-[10px] font-bold text-zinc-300 truncate max-w-[64px]">
@@ -77,13 +93,21 @@ export function StoriesBar({ currentUser, getInitials }: StoriesBarProps) {
                         ))
                     ) : (
                         <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-[var(--accent-bg)] border border-dashed border-[var(--card-border)] text-xs text-zinc-400 font-bold">
-                            <Camera className="w-4 h-4 opacity-50" />
-                            <span>No stories yet</span>
+                            <Camera className="w-4 h-4 opacity-50 text-purple-400" />
+                            <span>No active stories yet</span>
                         </div>
                     )}
 
                 </div>
             </div>
+
+            {/* Create Story Modal */}
+            <CreateStoryModal
+                isOpen={isCreateStoryOpen}
+                onClose={() => setIsCreateStoryOpen(false)}
+                currentUser={currentUser}
+                onStoryCreated={fetchStories}
+            />
 
             {/* Fullscreen Story Viewer Modal */}
             {activeStoryIndex !== null && realStories.length > 0 && (

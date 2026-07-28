@@ -57,6 +57,7 @@ export function PostFeed({ user, feedType = "global" }: { user: User, feedType?:
                         timestamp: { toDate: () => new Date(p.createdAt) }, // Mock Firestore timestamp for compatibility
                         likes: p.likes || [],
                         commentsCount: p.comments?.length || 0,
+                        initialComments: p.comments || []
                     }));
 
                     if (feedType === "following") {
