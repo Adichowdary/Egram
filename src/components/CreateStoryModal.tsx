@@ -32,7 +32,64 @@ export function CreateStoryModal({ isOpen, onClose, currentUser, onStoryCreated 
         };
     }, [mediaPreview]);
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const compressImage = (file: File): Promise<Blob | File> => {
+        return new Promise((resolve) => {
+            if (!file.type.startsWith("image/")) {
+                resolve(file);
+                return;
+            }
+            const img = new Image();
+            const objectUrl = URL.createObjectURL(file);
+            img.onload = () => {
+                URL.revokeObjectURL(objectUrl);
+                const canvas = document.createElement("canvas");
+                let width = img.width;
+                let height = img.height;
+                const MAX_DIM = 1280;
+
+                if (width > MAX_DIM || height > MAX_DIM) {
+                    if (width > height) {
+                        height = Math.round((height * MAX_DIM) / width);
+                        width = MAX_DIM;
+                    } else {
+                        width = Math.round((width * MAX_DIM) / height);
+                        height = MAX_DIM;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext("2d");
+                if (!ctx) {
+                    resolve(file);
+                    return;
+                }
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob(
+                    (blob) => {
+                        if (blob) {
+                            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+                                type: "image/jpeg",
+                                lastModified: Date.now()
+                            });
+                            resolve(compressedFile);
+                        } else {
+                            resolve(file);
+                        }
+                    },
+                    "image/jpeg",
+                    0.82
+                );
+            };
+            img.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                resolve(file);
+            };
+            img.src = objectUrl;
+        });
+    };
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             if (file.size > 50 * 1024 * 1024) {
@@ -40,13 +97,19 @@ export function CreateStoryModal({ isOpen, onClose, currentUser, onStoryCreated 
                 return;
             }
 
-            setSelectedFile(file);
             const isVid = file.type.startsWith('video/') || file.name.match(/\.(mp4|webm|mov|m4v|ogg)$/i) !== null;
             setMediaType(isVid ? 'video' : 'image');
 
-            // Use fast ObjectURL preview
-            const objectUrl = URL.createObjectURL(file);
-            setMediaPreview(objectUrl);
+            if (!isVid) {
+                const compressed = await compressImage(file);
+                setSelectedFile(compressed as File);
+                const objectUrl = URL.createObjectURL(compressed);
+                setMediaPreview(objectUrl);
+            } else {
+                setSelectedFile(file);
+                const objectUrl = URL.createObjectURL(file);
+                setMediaPreview(objectUrl);
+            }
         }
     };
 
@@ -101,6 +164,10 @@ export function CreateStoryModal({ isOpen, onClose, currentUser, onStoryCreated 
                 });
             }
 
+            if (!finalMediaUrl && mediaPreview) {
+                finalMediaUrl = mediaPreview;
+            }
+
             if (!finalMediaUrl) {
                 throw new Error("Unable to prepare media for status");
             }
@@ -109,7 +176,7 @@ export function CreateStoryModal({ isOpen, onClose, currentUser, onStoryCreated 
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    userId: currentUser.uid,
+                    userId: currentUser.uid || currentUser.id || "user_guest",
                     userName: currentUser.displayName || currentUser.email?.split('@')[0] || "Student",
                     userAvatar: currentUser.photoURL || "",
                     mediaUrl: finalMediaUrl,
@@ -125,7 +192,8 @@ export function CreateStoryModal({ isOpen, onClose, currentUser, onStoryCreated 
                 onStoryCreated();
                 onClose();
             } else {
-                addToast("Failed to publish story. Please try again.", "error");
+                const errData = await res.json().catch(() => ({}));
+                addToast(errData.error || "Failed to publish story. Please try again.", "error");
             }
         } catch (error) {
             console.error("Error creating story:", error);

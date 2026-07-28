@@ -87,7 +87,9 @@ export async function POST(req: Request) {
         const body = await req.json();
         const { userId, userName, userAvatar, mediaUrl, mediaType, caption } = body;
 
-        if (!userId || !userName || !mediaUrl) {
+        const resolvedUserName = userName || "Student";
+
+        if (!userId || !mediaUrl) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
@@ -96,28 +98,31 @@ export async function POST(req: Request) {
         const now = new Date();
         const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-        const conn = await connectMongo();
-        let createdStory = null;
-
-        if (conn) {
-            createdStory = await Story.create({
-                userId,
-                userName,
-                userAvatar: userAvatar || "",
-                mediaUrl,
-                mediaType: isVideo ? 'video' : 'image',
-                caption: caption || "",
-                views: [],
-                likes: [],
-                createdAt: now,
-                expiresAt
-            });
+        let createdStory: any = null;
+        try {
+            const conn = await connectMongo();
+            if (conn) {
+                createdStory = await Story.create({
+                    userId,
+                    userName: resolvedUserName,
+                    userAvatar: userAvatar || "",
+                    mediaUrl,
+                    mediaType: isVideo ? 'video' : 'image',
+                    caption: caption || "",
+                    views: [],
+                    likes: [],
+                    createdAt: now,
+                    expiresAt
+                });
+            }
+        } catch (dbErr) {
+            console.warn("MongoDB story creation failed, using in-memory store fallback:", dbErr);
         }
 
         const storyObj = {
             id: createdStory?._id?.toString() || `story_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
             userId,
-            userName,
+            userName: resolvedUserName,
             userAvatar: userAvatar || "",
             mediaUrl,
             mediaType: isVideo ? 'video' : 'image',
