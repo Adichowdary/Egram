@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { onAuthStateChanged, signOut, updateProfile } from "firebase/auth";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
-import { auth, storage } from "@/lib/firebase";
+import { auth, storage, db } from "@/lib/firebase";
+import { doc, setDoc } from "firebase/firestore";
 import { Sidebar } from "@/components/Sidebar";
 import { RightSidebar } from "@/components/RightSidebar";
 import { MobileNav } from "@/components/MobileNav";
@@ -142,7 +143,15 @@ export default function SettingsPage() {
                 body: JSON.stringify({ avatarUrl: photoPath }),
             });
 
-            window.dispatchEvent(new Event("userProfileUpdated"));
+            // Sync to Firestore for real-time listeners
+            try {
+                const userRef = doc(db, "users", user.uid);
+                await setDoc(userRef, { photoURL: photoPath, avatarUrl: photoPath }, { merge: true });
+            } catch (e) {
+                console.error("Firestore sync error:", e);
+            }
+
+            window.dispatchEvent(new CustomEvent("userProfileUpdated", { detail: { avatarUrl: photoPath } }));
             addToast("Profile avatar updated!", "success");
         } catch (err) {
             console.error(err);

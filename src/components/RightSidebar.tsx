@@ -24,7 +24,7 @@ export function RightSidebar({ user, handleSignOut, getInitials }: RightSidebarP
         if (!user?.uid) return;
         try {
             // Fetch MongoDB user profile for primary display
-            const res = await fetch(`/api/users/${user.uid}`);
+            const res = await fetch(`/api/users/${user.uid}?t=${Date.now()}`, { cache: "no-store" });
             if (res.ok) {
                 const data = await res.json();
                 sidebarMongoCache.set(user.uid, data);
@@ -47,7 +47,13 @@ export function RightSidebar({ user, handleSignOut, getInitials }: RightSidebarP
     useEffect(() => {
         fetchUserData();
 
-        const handleProfileUpdate = () => fetchUserData();
+        const handleProfileUpdate = (e: Event) => {
+            const customEvt = e as CustomEvent;
+            if (customEvt?.detail?.avatarUrl) {
+                setMongoProfile((prev: any) => ({ ...prev, avatarUrl: customEvt.detail.avatarUrl }));
+            }
+            fetchUserData();
+        };
         window.addEventListener("userProfileUpdated", handleProfileUpdate);
         return () => window.removeEventListener("userProfileUpdated", handleProfileUpdate);
     }, [user?.uid]);

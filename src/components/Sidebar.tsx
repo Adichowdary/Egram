@@ -34,7 +34,7 @@ export function Sidebar({ user, setIsModalOpen, setIsPostModalOpen, getInitials 
     const fetchSidebarProfile = async () => {
         if (!user?.uid) return;
         try {
-            const res = await fetch(`/api/users/${user.uid}`);
+            const res = await fetch(`/api/users/${user.uid}?t=${Date.now()}`, { cache: "no-store" });
             if (res.ok) {
                 const data = await res.json();
                 if (data.avatarUrl) {
@@ -70,7 +70,14 @@ export function Sidebar({ user, setIsModalOpen, setIsPostModalOpen, getInitials 
 
         const pollInterval = setInterval(checkUnreadNotifications, 30000);
 
-        const handleUpdate = () => fetchSidebarProfile();
+        const handleUpdate = (e: Event) => {
+            const customEvt = e as CustomEvent;
+            if (customEvt?.detail?.avatarUrl) {
+                sidebarAvatarCache.set(user.uid, customEvt.detail.avatarUrl);
+                setUserPhoto(customEvt.detail.avatarUrl);
+            }
+            fetchSidebarProfile();
+        };
         window.addEventListener("userProfileUpdated", handleUpdate);
 
         return () => {
@@ -96,8 +103,9 @@ export function Sidebar({ user, setIsModalOpen, setIsPostModalOpen, getInitials 
                 {navItems.map((item) => (
                     <Link href={item.href} key={item.href}>
                         <motion.li 
-                            whileHover={{ scale: 1.02, x: 5 }}
-                            whileTap={{ scale: 0.98 }}
+                            whileHover={{ scale: 1.03, x: 6 }}
+                            whileTap={{ scale: 0.95 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 22 }}
                             className={pathname === item.href ? "active" : ""}
                         >
                             {item.icon} <span>{item.label}</span>
@@ -106,22 +114,24 @@ export function Sidebar({ user, setIsModalOpen, setIsPostModalOpen, getInitials 
                 ))}
 
                 <motion.li 
-                    whileHover={{ scale: 1.02, x: 5 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: 1.03, x: 6 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
                     onClick={() => { setIsNotificationsOpen(true); setUnreadCount(0); }} 
                     className="cursor-pointer relative"
                 >
                     <Bell /> <span>Notifications</span>
                     {unreadCount > 0 && (
-                        <div className="absolute top-2 left-6 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white border-2 border-[var(--card-bg)]">
+                        <div className="absolute top-2 left-6 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white border-2 border-[var(--card-bg)] animate-pulse">
                             {unreadCount}
                         </div>
                     )}
                 </motion.li>
 
                 <motion.li 
-                    whileHover={{ scale: 1.02, x: 5 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: 1.03, x: 6 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
                     onClick={() => setIsPostModalOpen?.(true)} 
                     className="cursor-pointer"
                 >
@@ -129,8 +139,9 @@ export function Sidebar({ user, setIsModalOpen, setIsPostModalOpen, getInitials 
                 </motion.li>
                 
                 <motion.li 
-                    whileHover={{ scale: 1.02, x: 5 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: 1.03, x: 6 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
                     onClick={() => setIsModalOpen(true)} 
                     className="cursor-pointer"
                 >
@@ -139,11 +150,12 @@ export function Sidebar({ user, setIsModalOpen, setIsPostModalOpen, getInitials 
 
                 <Link href={`/profile/${user.uid}`}>
                     <motion.li 
-                        whileHover={{ scale: 1.02, x: 5 }}
-                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ scale: 1.03, x: 6 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 22 }}
                         className={pathname.includes(`/profile/${user.uid}`) ? "active" : ""}
                     >
-                        <div className="avatar-small">
+                        <div className="avatar-small transition-transform duration-300 hover:scale-110">
                             {userPhoto || user.photoURL ? (
                                 <img src={userPhoto || user.photoURL || ""} alt="Avatar" className="w-full h-full rounded-full object-cover" />
                             ) : (
@@ -156,8 +168,9 @@ export function Sidebar({ user, setIsModalOpen, setIsPostModalOpen, getInitials 
 
                 <Link href="/settings">
                     <motion.li 
-                        whileHover={{ scale: 1.02, x: 5 }}
-                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ scale: 1.03, x: 6 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 22 }}
                         className={pathname === "/settings" ? "active" : ""}
                     >
                         <SettingsIcon /> <span>Settings</span>

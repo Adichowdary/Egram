@@ -32,7 +32,7 @@ export async function POST(req: Request) {
                 user.name = displayName.trim();
                 modified = true;
             }
-            if (photoURL && photoURL.trim() !== "" && user.avatarUrl !== photoURL) {
+            if (photoURL && photoURL.trim() !== "" && (!user.avatarUrl || (user.avatarUrl !== photoURL && !user.avatarUrl.startsWith('data:')))) {
                 user.avatarUrl = photoURL.trim();
                 modified = true;
             }

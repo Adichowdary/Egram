@@ -214,8 +214,15 @@ export default function UserProfilePage() {
                     body: JSON.stringify({ avatarUrl: photoPath })
                 });
 
+                try {
+                    const userRef = doc(db, "users", user.uid);
+                    await setDoc(userRef, { photoURL: photoPath, avatarUrl: photoPath }, { merge: true });
+                } catch (e) {
+                    console.error("Firestore sync error:", e);
+                }
+
                 setProfileData((prev: any) => ({ ...prev, photoURL: photoPath, avatarUrl: photoPath }));
-                window.dispatchEvent(new Event("userProfileUpdated"));
+                window.dispatchEvent(new CustomEvent("userProfileUpdated", { detail: { avatarUrl: photoPath } }));
                 addToast("Profile picture updated!", "success");
             }
         } catch (error: any) {

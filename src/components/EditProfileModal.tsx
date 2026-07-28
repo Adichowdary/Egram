@@ -4,7 +4,8 @@ import { useState, useRef } from "react";
 import { X, Camera, Save, User, Mail, GraduationCap, BookOpen, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { updateProfile } from "firebase/auth";
-import { auth, storage } from "@/lib/firebase";
+import { auth, storage, db } from "@/lib/firebase";
+import { doc, setDoc } from "firebase/firestore";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useToast } from "@/components/ToastProvider";
 
@@ -72,13 +73,24 @@ export function EditProfileModal({ isOpen, onClose, user, currentData, onProfile
 
             setAvatarUrl(photoPath);
             await updateProfile(auth.currentUser!, { photoURL: photoPath }).catch(() => {});
+            
+            // Sync to MongoDB
             await fetch(`/api/users/${user.uid}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ avatarUrl: photoPath }),
             });
 
-            window.dispatchEvent(new Event("userProfileUpdated"));
+            // Sync to Firestore for real-time listeners & stories
+            try {
+                const userRef = doc(db, "users", user.uid);
+                await setDoc(userRef, { photoURL: photoPath, avatarUrl: photoPath }, { merge: true });
+            } catch (e) {
+                console.error("Firestore sync error:", e);
+            }
+
+            // Dispatch instant global custom event for immediate UI updates
+            window.dispatchEvent(new CustomEvent("userProfileUpdated", { detail: { avatarUrl: photoPath } }));
             addToast("Profile picture updated!", "success");
         } catch (err) {
             console.error(err);
