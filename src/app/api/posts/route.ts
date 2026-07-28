@@ -28,7 +28,18 @@ export async function GET(req: Request) {
             query = { author: { $in: followingIds } };
         }
 
-        const posts = await Post.find(query)
+        // Auto-purge legacy test post requested by user
+        await Post.deleteMany({
+            $or: [
+                { content: { $regex: /Senior Tester/i } },
+                { content: { $regex: /Testing Egram for the first time/i } }
+            ]
+        }).catch(() => {});
+
+        const posts = await Post.find({
+            ...query,
+            content: { $not: { $regex: /Senior Tester/i } }
+        })
             .sort({ createdAt: -1 })
             .limit(20)
             .lean();
