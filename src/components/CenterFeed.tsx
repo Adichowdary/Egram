@@ -23,77 +23,50 @@ import { StoriesBar } from "./StoriesBar";
 
 export function CenterFeed({ user }: CenterFeedProps) {
     const [feedType, setFeedType] = useState<"global" | "following">("global");
-    const [onlineFriends, setOnlineFriends] = useState<OnlineUser[]>([]);
-    const [loadingStories, setLoadingStories] = useState(true);
+    const [streakLeaderboard, setStreakLeaderboard] = useState<any[]>([]);
+    const [onlineUids, setOnlineUids] = useState<Set<string>>(new Set());
+    const [loadingStreak, setLoadingStreak] = useState(true);
 
-    useEffect(() => {
-        if (!user) return;
-
-        // 1. Fetch followed users from MongoDB first
-        const fetchFollowingAndListen = async () => {
-            try {
-                const res = await fetch(`/api/users/${user.uid}`);
-                const userData = await res.json();
-                const followingIds = userData.following || [];
+    const fetchGlobalStreakLeaderboard = async () => {
+        try {
+            const res = await fetch(`/api/users?sort=streak&t=${Date.now()}`, { cache: "no-store" });
+            if (res.ok) {
+                const data = await res.json();
+                const users = data.data || [];
                 
-                // We want to show "following" + "self"
-                const relevantUids = [user.uid, ...followingIds];
-
-                // 2. Setup Firestore listener for these users
-                if (relevantUids.length === 0) {
-                    setLoadingStories(false);
-                    return;
-                }
-
-                const usersQuery = query(
-                    collection(db, "users"),
-                    where("__name__", "in", relevantUids.slice(0, 30))
-                );
-
-                const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
-                    const users: OnlineUser[] = snapshot.docs.map(doc => ({
-                        uid: doc.id,
-                        ...doc.data()
-                    } as OnlineUser));
-
-                    // Filter for active users
-                    const now = Date.now();
-                    const activeUsers = users.filter(u => {
-                        if (u.uid === user.uid) return true; // Always show self
-                        
-                        // Check online status or activity within last 5 mins
-                        if (u.isOnline) return true;
-                        if (u.lastActive?.toMillis) {
-                            return (now - u.lastActive.toMillis()) < 300000;
-                        }
-                        return false;
-                    });
-
-                    // Sort: Self ALWAYS first, then by streak
-                    activeUsers.sort((a, b) => {
-                        if (a.uid === user.uid) return -1;
-                        if (b.uid === user.uid) return 1;
-                        return (b.currentStreak || 0) - (a.currentStreak || 0);
-                    });
-
-                    setOnlineFriends(activeUsers);
-                    setLoadingStories(false);
+                // Sort by highest streak descending
+                users.sort((a: any, b: any) => {
+                    const strA = a.currentStreak || a.streak || 0;
+                    const strB = b.currentStreak || b.streak || 0;
+                    return strB - strA;
                 });
 
-                return unsubscribe;
-            } catch (error) {
-                console.error("Error fetching following status:", error);
-                setLoadingStories(false);
+                setStreakLeaderboard(users);
             }
-        };
+        } catch (error) {
+            console.error("Error fetching streak leaderboard:", error);
+        } finally {
+            setLoadingStreak(false);
+        }
+    };
 
-        let unsubscribeFn: (() => void) | undefined;
-        fetchFollowingAndListen().then(unsub => {
-            unsubscribeFn = unsub;
+    useEffect(() => {
+        fetchGlobalStreakLeaderboard();
+
+        // Firestore online presence listener
+        const usersQuery = query(collection(db, "users"), where("isOnline", "==", true));
+        const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
+            const onlineSet = new Set<string>();
+            snapshot.docs.forEach(doc => onlineSet.add(doc.id));
+            setOnlineUids(onlineSet);
         });
 
+        const handleProfileUpdate = () => fetchGlobalStreakLeaderboard();
+        window.addEventListener("userProfileUpdated", handleProfileUpdate);
+
         return () => {
-            if (unsubscribeFn) unsubscribeFn();
+            unsubscribe();
+            window.removeEventListener("userProfileUpdated", handleProfileUpdate);
         };
     }, [user?.uid]);
 
@@ -109,55 +82,91 @@ export function CenterFeed({ user }: CenterFeedProps) {
                 <StoriesBar currentUser={user} getInitials={getInitials} />
             </div>
 
-            {/* Online Friends Bar */}
-            <div className="stories-bar glass overflow-x-auto no-scrollbar py-6 px-4 mb-6">
-                <div className="flex items-center gap-6 min-w-max">
-                    {loadingStories ? (
-                        [1, 2, 3, 4, 5].map(i => (
-                            <div key={i} className="w-16 h-16 rounded-full bg-[var(--accent-bg)] animate-pulse border-2 border-[var(--card-border)]" />
-                        ))
-                    ) : onlineFriends.length > 0 ? (
-                        onlineFriends.map(friend => (
-                            <Link key={friend.uid} href={`/profile/${friend.uid}`} className="relative group flex flex-col items-center gap-2">
-                                {/* Ring and Avatar Wrapper */}
-                                <div className="relative">
-                                    <div className={`w-16 h-16 rounded-full p-[2px] transition-all duration-300 group-hover:scale-105 shadow-lg ${friend.currentStreak > 0 ? 'bg-gradient-to-tr from-orange-500 via-red-500 to-amber-500 animate-gradient-xy' : 'bg-gradient-to-tr from-cyan-400 to-blue-500'}`}>
-                                        <div className="w-full h-full rounded-full bg-[var(--background)] p-[2px]">
-                                            <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-[var(--accent-bg)]">
-                                                {friend.photoURL ? (
-                                                    <img src={friend.photoURL} alt={friend.displayName} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                                                ) : (
-                                                    <span className="text-xl font-black text-[var(--primary)]">{getInitials(friend.displayName)}</span>
-                                                )}
+            {/* Global Streak Leaderboard Bar */}
+            <div className="glass rounded-3xl p-4 sm:p-5 mb-6 border border-zinc-800/90 bg-zinc-950/80 shadow-2xl relative overflow-hidden">
+                <div className="flex items-center justify-between mb-3 px-1">
+                    <div className="flex items-center gap-2">
+                        <span className="text-base sm:text-lg">🔥</span>
+                        <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white">Global Streak Leaderboard</h3>
+                    </div>
+                    <span className="text-[10px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-full">Top Users</span>
+                </div>
+
+                <div className="overflow-x-auto no-scrollbar py-2">
+                    <div className="flex items-center gap-5 min-w-max px-1">
+                        {loadingStreak ? (
+                            [1, 2, 3, 4, 5].map(i => (
+                                <div key={i} className="w-16 h-16 rounded-full bg-zinc-800 animate-pulse border-2 border-zinc-700" />
+                            ))
+                        ) : streakLeaderboard.length > 0 ? (
+                            streakLeaderboard.map((item, index) => {
+                                const rank = index + 1;
+                                const isSelf = item.firebaseUid === user.uid;
+                                const isOnline = onlineUids.has(item.firebaseUid);
+                                const streakVal = item.currentStreak || item.streak || 0;
+
+                                let borderGradient = "bg-gradient-to-tr from-cyan-400 to-blue-500";
+                                let crownBadge = null;
+
+                                if (rank === 1) {
+                                    borderGradient = "bg-gradient-to-tr from-amber-300 via-yellow-400 to-amber-600 shadow-amber-500/50";
+                                    crownBadge = "👑 #1";
+                                } else if (rank === 2) {
+                                    borderGradient = "bg-gradient-to-tr from-slate-200 via-slate-400 to-zinc-400 shadow-slate-400/40";
+                                    crownBadge = "🥈 #2";
+                                } else if (rank === 3) {
+                                    borderGradient = "bg-gradient-to-tr from-amber-700 via-orange-600 to-amber-800 shadow-amber-700/40";
+                                    crownBadge = "🥉 #3";
+                                }
+
+                                return (
+                                    <Link key={item.firebaseUid || index} href={`/profile/${item.firebaseUid}`} className="relative group flex flex-col items-center gap-1.5">
+                                        
+                                        {/* Rank Crown Badge */}
+                                        {crownBadge && (
+                                            <div className="absolute -top-3.5 z-30 bg-zinc-950 border border-amber-500/60 px-2 py-0.5 rounded-full text-[9px] font-black text-amber-400 shadow-lg">
+                                                {crownBadge}
+                                            </div>
+                                        )}
+
+                                        {/* Ring and Avatar Wrapper */}
+                                        <div className="relative">
+                                            <div className={`w-16 h-16 rounded-full p-[2px] transition-all duration-300 group-hover:scale-105 shadow-xl ${borderGradient}`}>
+                                                <div className="w-full h-full rounded-full bg-zinc-950 p-[2px]">
+                                                    <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-zinc-900">
+                                                        {item.avatarUrl ? (
+                                                            <img src={item.avatarUrl} alt={item.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                                                        ) : (
+                                                            <span className="text-lg font-black text-blue-400">{getInitials(item.name)}</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Online indicator */}
+                                            {isOnline && (
+                                                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-green-500 border-[3px] border-zinc-950 rounded-full z-20 shadow-md" />
+                                            )}
+
+                                            {/* Streak Badge */}
+                                            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-zinc-950 border border-zinc-700 px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-lg z-20">
+                                                <span className="text-[10px] font-black text-white">{streakVal}</span>
+                                                <span className="text-[10px]">{streakVal > 10 ? '🔥' : '❄️'}</span>
                                             </div>
                                         </div>
-                                    </div>
-                                    
-                                    {/* Online indicator (Actual Green Dot) */}
-                                    {friend.isOnline && (
-                                        <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-green-500 border-[3px] border-[var(--background)] rounded-full z-10 shadow-sm" />
-                                    )}
-
-                                    {/* Streak Badge (Custom Graphic Feel) */}
-                                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-[var(--background)] border border-[var(--card-border)] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-md z-20">
-                                        <span className="text-[10px] font-black leading-none text-[var(--text-dark)]">{friend.currentStreak || 0}</span>
-                                        <span className="text-[10px] leading-none">{friend.currentStreak > 10 ? '🔥' : '❄️'}</span>
-                                    </div>
-                                </div>
-                                
-                                <span className="text-[10px] font-bold text-[var(--text-light)] max-w-[64px] truncate transition-colors group-hover:text-[var(--text-dark)]">
-                                    {friend.uid === user.uid ? 'You' : (friend.displayName || 'User')}
-                                </span>
-                            </Link>
-                        ))
-                    ) : (
-                        <div className="flex items-center gap-3 px-4 py-2 opacity-50 bg-[var(--accent-bg)] rounded-2xl border border-dashed border-[var(--card-border)]">
-                            <div className="w-10 h-10 rounded-full border-2 border-[var(--card-border)] flex items-center justify-center bg-[var(--background)]">
-                                <span className="text-xs">👤</span>
+                                        
+                                        <span className="text-[10px] font-bold text-zinc-300 max-w-[68px] truncate transition-colors group-hover:text-white mt-1">
+                                            {isSelf ? 'You' : (item.name || 'User')}
+                                        </span>
+                                    </Link>
+                                );
+                            })
+                        ) : (
+                            <div className="flex items-center gap-3 px-4 py-2 bg-zinc-900/60 rounded-2xl border border-zinc-800">
+                                <span className="text-xs font-bold text-zinc-400">No active streak records yet</span>
                             </div>
-                            <span className="text-xs font-bold text-[var(--text-light)]">No one is online</span>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
 

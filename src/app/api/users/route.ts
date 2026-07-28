@@ -13,11 +13,14 @@ export async function GET(req: Request) {
 
         const { searchParams } = new URL(req.url);
         const idsParam = searchParams.get('ids');
+        const sortParam = searchParams.get('sort');
 
         let users;
         if (idsParam) {
             const uids = idsParam.split(',').filter(Boolean);
             users = await User.find({ firebaseUid: { $in: uids } }).lean();
+        } else if (sortParam === 'streak') {
+            users = await User.find({}).sort({ currentStreak: -1, streak: -1, createdAt: -1 }).limit(30).lean();
         } else {
             users = await User.find({}).sort({ createdAt: -1 }).lean();
         }
