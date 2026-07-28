@@ -10,7 +10,7 @@ import { CreateGroupModal } from "@/components/CreateGroupModal";
 import { CreatePostModal } from "@/components/CreatePostModal";
 import { GroupInfoModal } from "@/components/GroupInfoModal";
 import { MobileNav } from "@/components/MobileNav";
-import { Send, User as UserIcon, MessageSquare, ImageIcon, Clock, Users, Plus, Info, Camera, Paperclip, FileText, MoreVertical, Trash, X, Download, Check, AlertCircle } from "lucide-react";
+import { Send, User as UserIcon, MessageSquare, ImageIcon, Clock, Users, Plus, Info, Camera, Paperclip, FileText, MoreVertical, Trash, Trash2, X, Download, Check, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useScreenshotDetection } from "@/hooks/useScreenshotDetection";
@@ -775,10 +775,10 @@ export default function MessagesPage() {
                                                     <div className="relative mb-1">
                                                         <button
                                                             onClick={() => setOpenMessageMenuId(isMenuOpen ? null : msgId)}
-                                                            className="text-zinc-500 hover:text-white p-1 rounded-full hover:bg-zinc-800/60 transition-all opacity-80 group-hover:opacity-100"
+                                                            className="text-zinc-400 hover:text-white p-2 min-w-[40px] min-h-[40px] rounded-full hover:bg-zinc-800/80 active:scale-95 transition-all flex items-center justify-center cursor-pointer shadow-sm"
                                                             title="Message Options"
                                                         >
-                                                            <MoreVertical size={16} />
+                                                            <MoreVertical size={18} />
                                                         </button>
                                                         <AnimatePresence>
                                                             {isMenuOpen && (
@@ -786,13 +786,13 @@ export default function MessagesPage() {
                                                                     initial={{ opacity: 0, scale: 0.9, y: 5 }}
                                                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                                                     exit={{ opacity: 0, scale: 0.9, y: 5 }}
-                                                                    className="absolute left-0 bottom-full mb-1.5 w-36 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col origin-bottom-left"
+                                                                    className="absolute left-0 bottom-full mb-2 w-52 sm:w-60 bg-zinc-950 border border-zinc-700/90 rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col p-1.5 origin-bottom-left"
                                                                 >
                                                                     <button
                                                                         onClick={() => handleDeleteMessage(msgId, 'deleteForMe')}
-                                                                        className="text-left px-3.5 py-2.5 text-xs text-red-400 hover:bg-zinc-800 flex items-center gap-2 font-medium"
+                                                                        className="w-full text-left px-4 py-3 text-xs sm:text-sm text-red-400 hover:bg-red-500/10 rounded-xl flex items-center gap-3 font-extrabold transition-all cursor-pointer min-h-[46px]"
                                                                     >
-                                                                        <Trash size={14} /> Delete for me
+                                                                        <Trash size={16} /> Delete for me
                                                                     </button>
                                                                 </motion.div>
                                                             )}
@@ -878,10 +878,10 @@ export default function MessagesPage() {
                                                     <div className="relative mb-1">
                                                         <button
                                                             onClick={() => setOpenMessageMenuId(isMenuOpen ? null : msgId)}
-                                                            className="text-zinc-500 hover:text-white p-1 rounded-full hover:bg-zinc-800/60 transition-all opacity-80 group-hover:opacity-100"
+                                                            className="text-zinc-400 hover:text-white p-2 min-w-[40px] min-h-[40px] rounded-full hover:bg-zinc-800/80 active:scale-95 transition-all flex items-center justify-center cursor-pointer shadow-sm"
                                                             title="Message Options"
                                                         >
-                                                            <MoreVertical size={16} />
+                                                            <MoreVertical size={18} />
                                                         </button>
                                                         <AnimatePresence>
                                                             {isMenuOpen && (
@@ -889,19 +889,19 @@ export default function MessagesPage() {
                                                                     initial={{ opacity: 0, scale: 0.9, y: 5 }}
                                                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                                                     exit={{ opacity: 0, scale: 0.9, y: 5 }}
-                                                                    className="absolute right-0 bottom-full mb-1.5 w-44 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col origin-bottom-right"
+                                                                    className="absolute right-0 bottom-full mb-2 w-56 sm:w-64 bg-zinc-950 border border-zinc-700/90 rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col p-1.5 origin-bottom-right"
                                                                 >
                                                                     <button
                                                                         onClick={() => handleDeleteMessage(msgId, 'deleteForMe')}
-                                                                        className="text-left px-3.5 py-2.5 text-xs text-zinc-200 hover:bg-zinc-800 font-medium"
+                                                                        className="w-full text-left px-4 py-3.5 text-xs sm:text-sm text-zinc-200 hover:bg-zinc-800/90 rounded-xl flex items-center gap-3 font-bold transition-all cursor-pointer min-h-[46px]"
                                                                     >
-                                                                        Delete for me
+                                                                        <Trash2 size={16} className="text-amber-400" /> Delete for me
                                                                     </button>
                                                                     <button
                                                                         onClick={() => handleDeleteMessage(msgId, 'deleteForEveryone')}
-                                                                        className="text-left px-3.5 py-2.5 text-xs text-red-400 hover:bg-zinc-800 flex items-center gap-2 border-t border-zinc-800/80 font-medium"
+                                                                        className="w-full text-left px-4 py-3.5 text-xs sm:text-sm text-red-400 hover:bg-red-500/15 rounded-xl flex items-center gap-3 font-black border-t border-zinc-800/90 mt-1 pt-3.5 transition-all cursor-pointer min-h-[46px]"
                                                                     >
-                                                                        <Trash size={14} /> Delete for everyone
+                                                                        <Trash size={16} className="text-red-500" /> Delete for everyone
                                                                     </button>
                                                                 </motion.div>
                                                             )}
@@ -956,27 +956,27 @@ export default function MessagesPage() {
                                             )}
 
                                             {/* Text Input Row */}
-                                            <div className="flex gap-2 items-center">
-                                                <div className="flex gap-1 items-center bg-[var(--background)] rounded-2xl px-3 border border-[var(--card-border)] flex-1 shadow-inner">
+                                            <div className="flex gap-2.5 items-center">
+                                                <div className="flex gap-1.5 items-center bg-[var(--background)] rounded-2xl px-3.5 border border-[var(--card-border)] flex-1 min-h-[52px] sm:min-h-[56px] shadow-inner">
                                                     
                                                     {/* Image Attachment Icon Button */}
                                                     <button
                                                         type="button"
                                                         onClick={() => imageInputRef.current?.click()}
-                                                        className="p-2 text-zinc-400 hover:text-blue-400 rounded-full transition-colors flex items-center justify-center"
+                                                        className="p-2 text-zinc-400 hover:text-blue-400 rounded-full transition-colors flex items-center justify-center min-w-[42px] min-h-[42px]"
                                                         title="Attach Image"
                                                     >
-                                                        <ImageIcon className="w-5 h-5" />
+                                                        <ImageIcon className="w-5.5 h-5.5" />
                                                     </button>
 
                                                     {/* Document Attachment Icon Button */}
                                                     <button
                                                         type="button"
                                                         onClick={() => docInputRef.current?.click()}
-                                                        className="p-2 text-zinc-400 hover:text-purple-400 rounded-full transition-colors flex items-center justify-center"
+                                                        className="p-2 text-zinc-400 hover:text-purple-400 rounded-full transition-colors flex items-center justify-center min-w-[42px] min-h-[42px]"
                                                         title="Attach PDF Document"
                                                     >
-                                                        <Paperclip className="w-5 h-5" />
+                                                        <Paperclip className="w-5.5 h-5.5" />
                                                     </button>
 
                                                     <input
@@ -984,23 +984,23 @@ export default function MessagesPage() {
                                                         value={newMessage}
                                                         onChange={(e) => setNewMessage(e.target.value)}
                                                         placeholder={chatFile ? "Add a caption..." : "Type a message..."}
-                                                        className="flex-1 py-3 px-2 bg-transparent text-[var(--text-dark)] outline-none border-none text-xs sm:text-sm placeholder:text-zinc-500"
+                                                        className="flex-1 py-3.5 px-2 bg-transparent text-[var(--text-dark)] outline-none border-none text-sm sm:text-base font-medium placeholder:text-zinc-500"
                                                     />
                                                 </div>
 
                                                 <button
                                                     type="submit"
                                                     disabled={(!newMessage.trim() && !chatFile) || isSending}
-                                                    className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 shadow-md ${
+                                                    className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-2xl flex items-center justify-center transition-all duration-200 shadow-md ${
                                                         (newMessage.trim() || chatFile) && !isSending
-                                                            ? "bg-[var(--primary)] text-white hover:scale-105 active:scale-95 shadow-blue-500/30"
+                                                            ? "bg-[var(--primary)] text-white hover:scale-105 active:scale-95 shadow-blue-500/30 font-bold"
                                                             : "bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700"
                                                     }`}
                                                 >
                                                     {isSending ? (
                                                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                                     ) : (
-                                                        <Send size={18} />
+                                                        <Send size={20} />
                                                     )}
                                                 </button>
                                             </div>
