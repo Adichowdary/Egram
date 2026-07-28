@@ -184,10 +184,20 @@ export default function UserProfilePage() {
         try {
             let photoPath = "";
             try {
-                const storagePath = `avatars/${user.uid}/${Date.now()}_${file.name}`;
-                const fileRef = storageRef(storage, storagePath);
-                const snapshot = await uploadBytes(fileRef, file);
-                photoPath = await getDownloadURL(snapshot.ref);
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("bucket", "avatars");
+                const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+                if (uploadRes.ok) {
+                    const uploadData = await uploadRes.json();
+                    photoPath = uploadData.url;
+                } else {
+                    const reader = new FileReader();
+                    photoPath = await new Promise((resolve) => {
+                        reader.onload = (ev) => resolve(ev.target?.result as string);
+                        reader.readAsDataURL(file);
+                    });
+                }
             } catch {
                 const reader = new FileReader();
                 photoPath = await new Promise((resolve) => {

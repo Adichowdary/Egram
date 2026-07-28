@@ -313,17 +313,24 @@ export default function MessagesPage() {
                 mediaType = isImage ? 'image' : 'pdf';
 
                 try {
-                    const path = `chat_media/${user.uid}/${Date.now()}_${currentFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-                    const fileRef = storageRef(storage, path);
-                    const snapshot = await uploadBytes(fileRef, currentFile);
-                    mediaUrl = await getDownloadURL(snapshot.ref);
-                } catch (storageErr) {
-                    console.warn("Storage upload fallback:", storageErr);
-                    if (isImage) {
-                        mediaUrl = await compressImage(currentFile);
+                    const formData = new FormData();
+                    formData.append("file", currentFile);
+                    formData.append("bucket", "chat-media");
+
+                    const uploadRes = await fetch("/api/upload", {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    if (uploadRes.ok) {
+                        const uploadData = await uploadRes.json();
+                        mediaUrl = uploadData.url;
                     } else {
-                        mediaUrl = await fileToBase64(currentFile);
+                        mediaUrl = isImage ? await compressImage(currentFile) : await fileToBase64(currentFile);
                     }
+                } catch (storageErr) {
+                    console.warn("Upload endpoint fallback:", storageErr);
+                    mediaUrl = isImage ? await compressImage(currentFile) : await fileToBase64(currentFile);
                 }
             }
 
@@ -438,11 +445,17 @@ export default function MessagesPage() {
         try {
             let downloadURL = "";
             try {
-                const storagePath = `wallpapers/${user.uid}/${targetId}/${Date.now()}_${file.name}`;
-                const fileRef = storageRef(storage, storagePath);
-                const snapshot = await uploadBytes(fileRef, file);
-                downloadURL = await getDownloadURL(snapshot.ref);
-            } catch (err) {
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("bucket", "wallpapers");
+                const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+                if (uploadRes.ok) {
+                    const uploadData = await uploadRes.json();
+                    downloadURL = uploadData.url;
+                } else {
+                    downloadURL = await fileToBase64(file);
+                }
+            } catch {
                 downloadURL = await fileToBase64(file);
             }
 

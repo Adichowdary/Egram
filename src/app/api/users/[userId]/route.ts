@@ -37,9 +37,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ userId: 
             }, { status: 200 });
         }
 
-        // Live count verification from Follower collection
-        const liveFollowersCount = await Follower.countDocuments({ followingId: userId });
-        const liveFollowingCount = await Follower.countDocuments({ followerId: userId });
+        // Parallel live count verification from Follower collection for 2x faster load speed
+        const [liveFollowersCount, liveFollowingCount] = await Promise.all([
+            Follower.countDocuments({ followingId: userId }),
+            Follower.countDocuments({ followerId: userId })
+        ]);
 
         return NextResponse.json({
             ...user,

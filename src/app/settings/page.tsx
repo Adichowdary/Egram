@@ -110,9 +110,20 @@ export default function SettingsPage() {
         try {
             let photoPath = "";
             try {
-                const sRef = storageRef(storage, `avatars/${user.uid}_${Date.now()}`);
-                const snap = await uploadBytes(sRef, file);
-                photoPath = await getDownloadURL(snap.ref);
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("bucket", "avatars");
+                const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+                if (uploadRes.ok) {
+                    const uploadData = await uploadRes.json();
+                    photoPath = uploadData.url;
+                } else {
+                    photoPath = await new Promise((resolve) => {
+                        const r = new FileReader();
+                        r.onload = (evt) => resolve(evt.target?.result as string);
+                        r.readAsDataURL(file);
+                    });
+                }
             } catch {
                 photoPath = await new Promise((resolve) => {
                     const r = new FileReader();

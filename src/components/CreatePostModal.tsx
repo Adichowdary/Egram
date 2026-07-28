@@ -40,10 +40,16 @@ export function CreatePostModal({ isOpen, onClose, user }: CreatePostModalProps)
             let mediaUrl = "";
             if (imageFile) {
                 try {
-                    const path = `posts/${user.uid}/${Date.now()}_${imageFile.name}`;
-                    const fileRef = storageRef(storage, path);
-                    const snapshot = await uploadBytes(fileRef, imageFile);
-                    mediaUrl = await getDownloadURL(snapshot.ref);
+                    const formData = new FormData();
+                    formData.append("file", imageFile);
+                    formData.append("bucket", "posts");
+                    const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+                    if (uploadRes.ok) {
+                        const uploadData = await uploadRes.json();
+                        mediaUrl = uploadData.url;
+                    } else {
+                        mediaUrl = imagePreview || "";
+                    }
                 } catch {
                     mediaUrl = imagePreview || "";
                 }
