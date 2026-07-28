@@ -67,12 +67,21 @@ export function UserCard({ profile, isFollowing, onFollow, showFollowButton = tr
                         style={{ background: "var(--card-bg)", border: "2px solid var(--card-bg)" }}
                     >
                         {profile.photoURL || (profile as any).avatarUrl ? (
-                            <img src={profile.photoURL || (profile as any).avatarUrl || ""} alt={profile.displayName || "User"} className="w-full h-full object-cover" />
-                        ) : (
-                            <span className="text-lg sm:text-xl font-black uppercase" style={{ color: "var(--primary)" }}>
-                                {getInitials(profile.displayName)}
-                            </span>
-                        )}
+                            <img 
+                                src={profile.photoURL || (profile as any).avatarUrl || ""} 
+                                alt={profile.displayName || "User"} 
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    if (e.currentTarget.nextElementSibling) {
+                                        (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'block';
+                                    }
+                                }}
+                            />
+                        ) : null}
+                        <span className="text-lg sm:text-xl font-black uppercase" style={{ color: "var(--primary)", display: (profile.photoURL || (profile as any).avatarUrl) ? 'none' : 'block' }}>
+                            {getInitials(profile.displayName)}
+                        </span>
                     </div>
                 </div>
 

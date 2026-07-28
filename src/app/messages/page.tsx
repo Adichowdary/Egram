@@ -15,6 +15,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useScreenshotDetection } from "@/hooks/useScreenshotDetection";
 import { useRouter } from "next/navigation";
+import { subscribeToChatMessages } from "@/lib/supabase";
+import { ContactsSkeleton, MessagesSkeleton } from "@/components/ChatSkeleton";
 
 // Utility to convert file to base64 string as fallback
 const fileToBase64 = (file: File): Promise<string> => {
@@ -86,6 +88,52 @@ const compressImage = (file: File, maxWidth = 1000, quality = 0.75): Promise<str
     });
 };
 
+const messageCache = new Map<string, any[]>();
+
+const getStoredMessages = (cacheKey: string): any[] => {
+    if (typeof window === "undefined") return [];
+    try {
+        const item = localStorage.getItem(`chat_msg_${cacheKey}`);
+        return item ? JSON.parse(item) : [];
+    } catch {
+        return [];
+    }
+};
+
+const setStoredMessages = (cacheKey: string, msgs: any[]) => {
+    if (typeof window === "undefined") return;
+    try {
+        localStorage.setItem(`chat_msg_${cacheKey}`, JSON.stringify(msgs.slice(-50)));
+    } catch {}
+};
+
+function AvatarImage({ src, name, className = "w-full h-full rounded-full object-cover", fallbackClassName = "w-full h-full rounded-full flex items-center justify-center bg-blue-600/20 text-blue-400 font-bold border border-blue-500/30" }: { src?: string; name: string; className?: string; fallbackClassName?: string }) {
+    const [failed, setFailed] = useState(false);
+
+    useEffect(() => {
+        setFailed(false);
+    }, [src]);
+
+    const getInitials = (n: string) => n ? n.split(' ').map(x => x[0]).join('').substring(0, 2).toUpperCase() : '?';
+
+    if (src && !failed) {
+        return (
+            <img 
+                src={src} 
+                alt={name} 
+                className={className} 
+                onError={() => setFailed(true)} 
+            />
+        );
+    }
+
+    return (
+        <div className={fallbackClassName}>
+            {getInitials(name)}
+        </div>
+    );
+}
+
 export default function MessagesPage() {
     const [user, setUser] = useState<FirebaseUser | null>(() => typeof window !== "undefined" && auth ? auth.currentUser : null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -98,6 +146,7 @@ export default function MessagesPage() {
     const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
     const [isGroupInfoModalOpen, setIsGroupInfoModalOpen] = useState(false);
     const [messages, setMessages] = useState<any[]>([]);
+    const [loadingMessages, setLoadingMessages] = useState(false);
     const [newMessage, setNewMessage] = useState("");
     const [loadingContacts, setLoadingContacts] = useState(true);
     const [chatWallpapers, setChatWallpapers] = useState<Record<string, string>>({});
@@ -162,14 +211,15 @@ export default function MessagesPage() {
                 }
 
                 const contactIds = Array.from(new Set([...(userData.following || []), ...(userData.followers || [])])) as string[];
-                if (contactIds.length > 0) {
-                    const contactsRes = await fetch(`/api/users?ids=${contactIds.join(',')}&t=${Date.now()}`, { cache: "no-store" });
-                    if (contactsRes.ok) {
-                        const contactsResult = await contactsRes.json();
-                        setConversations(contactsResult.data || []);
-                    }
-                } else {
-                    setConversations([]);
+                const fetchUrl = contactIds.length > 0 
+                    ? `/api/users?ids=${contactIds.join(',')}&t=${Date.now()}` 
+                    : `/api/users?t=${Date.now()}`;
+
+                const contactsRes = await fetch(fetchUrl, { cache: "no-store" });
+                if (contactsRes.ok) {
+                    const contactsResult = await contactsRes.json();
+                    const filtered = (contactsResult.data || []).filter((u: any) => u.firebaseUid !== uid);
+                    setConversations(filtered);
                 }
             }
         } catch (error) {
@@ -193,6 +243,20 @@ export default function MessagesPage() {
 
     const fetchMessages = async (contactId: string, isGroup: boolean = false, isInitial: boolean = false) => {
         if (!user) return;
+        const cacheKey = isGroup ? `group_${contactId}` : `user_${contactId}`;
+
+        if (isInitial) {
+            const memoryCached = messageCache.get(cacheKey);
+            const localCached = memoryCached || getStoredMessages(cacheKey);
+            if (localCached && localCached.length > 0) {
+                setMessages(localCached);
+                setTimeout(scrollToBottom, 10);
+            } else {
+                setMessages([]);
+                setLoadingMessages(true);
+            }
+        }
+
         try {
             const url = isGroup
                 ? `/api/messages?groupId=${contactId}`
@@ -201,36 +265,97 @@ export default function MessagesPage() {
             if (res.ok) {
                 const data = await res.json();
                 const fetched: any[] = data.data || [];
-                setMessages(prev => {
-                    if (prev.length === fetched.length && (prev.length === 0 || prev[prev.length - 1]?._id === fetched[fetched.length - 1]?._id)) {
-                        return prev;
-                    }
-                    return fetched;
-                });
+                messageCache.set(cacheKey, fetched);
+                setStoredMessages(cacheKey, fetched);
+                setMessages(fetched);
                 if (isInitial) {
                     setTimeout(scrollToBottom, 50);
                 }
             }
         } catch (error) {
             console.error("Error fetching messages:", error);
+        } finally {
+            if (isInitial) setLoadingMessages(false);
         }
     };
 
+
     useEffect(() => {
-        if (selectedUser) {
+        let unsubscribeRealtime = () => {};
+
+        if (selectedUser && user) {
             fetchMessages(selectedUser.firebaseUid, false, true);
+            
+            // Supabase Realtime instant WebSocket subscription
+            unsubscribeRealtime = subscribeToChatMessages(
+                { user1: user.uid, user2: selectedUser.firebaseUid },
+                (newMsg) => {
+                    const formatted = {
+                        _id: newMsg.mongo_id || newMsg.id,
+                        senderId: newMsg.sender_id,
+                        receiverId: newMsg.receiver_id,
+                        groupId: newMsg.group_id,
+                        content: newMsg.content,
+                        mediaUrl: newMsg.media_url,
+                        mediaType: newMsg.media_type,
+                        isRead: newMsg.is_read,
+                        createdAt: newMsg.created_at
+                    };
+                    setMessages(prev => {
+                        const exists = prev.some(m => (m._id || m.id) === formatted._id);
+                        if (exists) return prev;
+                        return [...prev, formatted];
+                    });
+                    setTimeout(scrollToBottom, 50);
+                }
+            );
+
             const interval = setInterval(() => {
                 fetchMessages(selectedUser.firebaseUid, false, false);
-            }, 2500);
-            return () => clearInterval(interval);
-        } else if (selectedGroup) {
+            }, 5000);
+
+            return () => {
+                unsubscribeRealtime();
+                clearInterval(interval);
+            };
+        } else if (selectedGroup && user) {
             fetchMessages(selectedGroup._id, true, true);
+            
+            // Supabase Realtime instant WebSocket subscription for Group
+            unsubscribeRealtime = subscribeToChatMessages(
+                { groupId: selectedGroup._id },
+                (newMsg) => {
+                    const formatted = {
+                        _id: newMsg.mongo_id || newMsg.id,
+                        senderId: newMsg.sender_id,
+                        receiverId: newMsg.receiver_id,
+                        groupId: newMsg.group_id,
+                        content: newMsg.content,
+                        mediaUrl: newMsg.media_url,
+                        mediaType: newMsg.media_type,
+                        isRead: newMsg.is_read,
+                        createdAt: newMsg.created_at
+                    };
+                    setMessages(prev => {
+                        const exists = prev.some(m => (m._id || m.id) === formatted._id);
+                        if (exists) return prev;
+                        return [...prev, formatted];
+                    });
+                    setTimeout(scrollToBottom, 50);
+                }
+            );
+
             const interval = setInterval(() => {
                 fetchMessages(selectedGroup._id, true, false);
-            }, 2500);
-            return () => clearInterval(interval);
+            }, 5000);
+
+            return () => {
+                unsubscribeRealtime();
+                clearInterval(interval);
+            };
         }
-    }, [selectedUser, selectedGroup]);
+    }, [selectedUser, selectedGroup, user]);
+
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -544,10 +669,7 @@ export default function MessagesPage() {
                         <div style={{ overflowY: "auto", flex: 1 }}>
                             {activeTab === 'direct' ? (
                                 loadingContacts ? (
-                                    <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-light)" }}>
-                                        <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto mb-2" />
-                                        <span className="text-xs">Loading conversations...</span>
-                                    </div>
+                                    <ContactsSkeleton />
                                 ) : conversations.length === 0 ? (
                                     <div style={{ padding: "3rem 1.5rem", textAlign: "center" }}>
                                         <div className="w-14 h-14 rounded-full bg-[var(--primary-bg)] text-[var(--primary)] flex items-center justify-center mx-auto mb-4 border border-[var(--primary)]/20">
@@ -577,13 +699,7 @@ export default function MessagesPage() {
                                             className="hover:bg-[var(--card-hover)]"
                                         >
                                             <div className="avatar cursor-pointer" style={{ width: "42px", height: "42px", flexShrink: 0 }}>
-                                                {contact.avatarUrl ? (
-                                                    <img src={contact.avatarUrl} alt={contact.name} className="w-full h-full rounded-full object-cover" />
-                                                ) : (
-                                                    <div className="avatar-placeholder w-full h-full rounded-full flex items-center justify-center bg-blue-600/20 text-blue-400 font-bold border border-blue-500/30">
-                                                        {getInitials(contact.name)}
-                                                    </div>
-                                                )}
+                                                <AvatarImage src={contact.avatarUrl} name={contact.name} />
                                             </div>
                                             <div style={{ overflow: "hidden", flex: 1 }}>
                                                 <h3 style={{ fontSize: "0.95rem", fontWeight: 600, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", color: blockedUsers.includes(contact.firebaseUid) ? 'var(--text-light)' : 'inherit' }}>
@@ -683,12 +799,16 @@ export default function MessagesPage() {
                                         <span className="text-xl font-black">&larr;</span>
                                     </button>
                                     <div className="avatar cursor-pointer" style={{ width: "42px", height: "42px", flexShrink: 0 }}>
-                                        {activeChatEntity.avatarUrl ? (
-                                            <img src={activeChatEntity.avatarUrl} alt={activeChatEntity.name} className="w-full h-full rounded-full object-cover" />
+                                        {selectedGroup ? (
+                                            activeChatEntity.avatarUrl ? (
+                                                <AvatarImage src={activeChatEntity.avatarUrl} name={activeChatEntity.name} className="w-full h-full rounded-xl object-cover" />
+                                            ) : (
+                                                <div className="avatar-placeholder w-full h-full flex items-center justify-center font-bold rounded-xl bg-purple-600/20 text-purple-400 border border-purple-500/30">
+                                                    <Users size={20} />
+                                                </div>
+                                            )
                                         ) : (
-                                            <div className={`avatar-placeholder w-full h-full flex items-center justify-center font-bold ${selectedGroup ? 'rounded-xl bg-purple-600/20 text-purple-400 border border-purple-500/30' : 'rounded-full bg-blue-600/20 text-blue-400 border border-blue-500/30'}`}>
-                                                {selectedGroup ? <Users size={20} /> : getInitials(activeChatEntity.name)}
-                                            </div>
+                                            <AvatarImage src={activeChatEntity.avatarUrl} name={activeChatEntity.name} />
                                         )}
                                     </div>
                                     <div>
@@ -756,31 +876,31 @@ export default function MessagesPage() {
 
                                 {/* Messages Timeline List */}
                                 <div style={{ flex: 1, overflowY: "auto", padding: "1rem 1.2rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
-                                    {messages.map((msg) => {
-                                        if (msg.deletedForMe && msg.deletedForMe.includes(user.uid)) return null;
+                                    {loadingMessages ? (
+                                        <MessagesSkeleton />
+                                    ) : (
+                                        messages.map((msg) => {
+                                            if (msg.deletedForMe && msg.deletedForMe.includes(user.uid)) return null;
 
-                                        const isMine = msg.senderId === user.uid;
-                                        const senderDetails = selectedGroup && !isMine ? conversations.find(c => c.firebaseUid === msg.senderId) : null;
-                                        const msgId = msg._id || msg.id;
-                                        const isMenuOpen = openMessageMenuId === msgId;
+                                            const isMine = msg.senderId === user.uid;
+                                            const senderDetails = selectedGroup && !isMine ? conversations.find(c => c.firebaseUid === msg.senderId) : null;
+                                            const msgId = msg._id || msg.id;
+                                            const isMenuOpen = openMessageMenuId === msgId;
 
-                                        return (
-                                            <div
-                                                key={msgId}
-                                                className="relative group flex items-end gap-2"
-                                                style={{ justifyContent: isMine ? "flex-end" : "flex-start" }}
-                                            >
-                                                {selectedGroup && !isMine && (
-                                                    <div className="w-7 h-7 rounded-full overflow-hidden bg-zinc-800 flex-shrink-0 mb-1 border border-zinc-700">
-                                                        {senderDetails?.avatarUrl ? (
-                                                            <img src={senderDetails.avatarUrl} alt={senderDetails.name} className="w-full h-full object-cover" />
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center text-[10px] font-bold bg-zinc-800 text-zinc-300">
-                                                                {getInitials(senderDetails?.name || '?')}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
+                                            return (
+                                                <motion.div
+                                                    key={msgId}
+                                                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                    transition={{ type: "spring", stiffness: 450, damping: 28 }}
+                                                    className="relative group flex items-end gap-2"
+                                                    style={{ justifyContent: isMine ? "flex-end" : "flex-start" }}
+                                                >
+                                                    {selectedGroup && !isMine && (
+                                                        <div className="w-7 h-7 rounded-full overflow-hidden bg-zinc-800 flex-shrink-0 mb-1 border border-zinc-700">
+                                                            <AvatarImage src={senderDetails?.avatarUrl} name={senderDetails?.name || '?'} />
+                                                        </div>
+                                                    )}
 
                                                 {/* Left Action Menu (For Receiver) */}
                                                 {!isMine && (
@@ -920,9 +1040,9 @@ export default function MessagesPage() {
                                                         </AnimatePresence>
                                                     </div>
                                                 )}
-                                            </div>
-                                        );
-                                    })}
+                                            </motion.div>
+                                         );
+                                     }))}
                                     <div ref={messagesEndRef} />
                                 </div>
 

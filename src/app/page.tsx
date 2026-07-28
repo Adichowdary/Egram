@@ -9,6 +9,7 @@ import { RightSidebar } from "@/components/RightSidebar";
 import { CenterFeed } from "@/components/CenterFeed";
 import { CreateMeetModal } from "@/components/CreateMeetModal";
 import { CreatePostModal } from "@/components/CreatePostModal";
+import { CreateStoryModal } from "@/components/CreateStoryModal";
 
 import { AnimatePresence } from "framer-motion";
 import { SplashScreen } from "@/components/SplashScreen";
@@ -24,6 +25,7 @@ export default function Home() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  const [isStoryModalOpen, setIsStoryModalOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -72,7 +74,12 @@ export default function Home() {
               />
             </main>
 
-            <MobileNav onOpenCreatePost={() => setIsPostModalOpen(true)} onOpenCreateMeet={() => setIsModalOpen(true)} currentUserId={user.uid} />
+            <MobileNav
+              onOpenCreatePost={() => setIsPostModalOpen(true)}
+              onOpenCreateMeet={() => setIsModalOpen(true)}
+              onOpenCreateStory={() => setIsStoryModalOpen(true)}
+              currentUserId={user.uid}
+            />
 
             <CreateMeetModal
               isOpen={isModalOpen}
@@ -85,6 +92,15 @@ export default function Home() {
               isOpen={isPostModalOpen}
               onClose={() => setIsPostModalOpen(false)}
               user={user}
+            />
+
+            <CreateStoryModal
+              isOpen={isStoryModalOpen}
+              onClose={() => setIsStoryModalOpen(false)}
+              currentUser={user}
+              onStoryCreated={() => {
+                window.dispatchEvent(new Event("userProfileUpdated"));
+              }}
             />
           </div>
         </PageTransition>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Search, MessageSquare, Bell, Menu, Compass, BookOpen, Users, User, Settings, PlusSquare, Video, LogOut, X, Sun, Moon } from "lucide-react";
+import { Home, Search, MessageSquare, Bell, Menu, Compass, BookOpen, Users, User, Settings, PlusSquare, Video, LogOut, X, Sun, Moon, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { auth } from "@/lib/firebase";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
@@ -12,10 +12,11 @@ import { useTheme } from "next-themes";
 interface MobileNavProps {
     onOpenCreatePost?: () => void;
     onOpenCreateMeet?: () => void;
+    onOpenCreateStory?: () => void;
     currentUserId?: string;
 }
 
-export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, currentUserId }: MobileNavProps) {
+export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStory, currentUserId }: MobileNavProps) {
     const pathname = usePathname();
     const router = useRouter();
     const { theme, setTheme } = useTheme();
@@ -139,17 +140,26 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, currentUserId }:
                                 </button>
                             </div>
 
-                            {/* Action Buttons: Create Post & Create Meet */}
-                            <div className="grid grid-cols-2 gap-3">
-                                {onOpenCreatePost && (
+                            {/* Action Buttons: Create Story, Create Study Room & Create Post */}
+                            <div className="flex flex-col gap-3">
+                                {onOpenCreateStory && (
                                     <button
                                         onClick={() => {
                                             setIsMoreOpen(false);
-                                            onOpenCreatePost();
+                                            onOpenCreateStory();
                                         }}
-                                        className="flex items-center justify-center gap-2.5 py-4 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 text-white font-black text-sm shadow-xl active:scale-95 transition-all min-h-[48px]"
+                                        className="w-full flex items-center justify-between p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500 via-pink-600 to-purple-600 text-white font-black shadow-2xl active:scale-[0.98] transition-all min-h-[64px] border-2 border-amber-400/40 cursor-pointer"
                                     >
-                                        <PlusSquare className="w-5 h-5" /> Create Post
+                                        <div className="flex items-center gap-3.5">
+                                            <div className="p-2.5 rounded-xl bg-white/20 backdrop-blur-md text-white">
+                                                <Sparkles className="w-6.5 h-6.5 animate-pulse" />
+                                            </div>
+                                            <div className="flex flex-col text-left">
+                                                <span className="text-base sm:text-lg font-black tracking-tight">Create Story / Status</span>
+                                                <span className="text-xs text-amber-100 font-medium">Post photo or video status (24h)</span>
+                                            </div>
+                                        </div>
+                                        <PlusSquare className="w-5.5 h-5.5 text-amber-200" />
                                     </button>
                                 )}
                                 {onOpenCreateMeet && (
@@ -158,9 +168,34 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, currentUserId }:
                                             setIsMoreOpen(false);
                                             onOpenCreateMeet();
                                         }}
-                                        className="flex items-center justify-center gap-2.5 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black text-sm shadow-xl active:scale-95 transition-all min-h-[48px]"
+                                        className="w-full flex items-center justify-between p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 text-white font-black shadow-2xl active:scale-[0.98] transition-all min-h-[64px] border-2 border-cyan-400/40 cursor-pointer"
                                     >
-                                        <Video className="w-5 h-5" /> Create Meet
+                                        <div className="flex items-center gap-3.5">
+                                            <div className="p-2.5 rounded-xl bg-white/20 backdrop-blur-md text-white">
+                                                <Video className="w-6.5 h-6.5" />
+                                            </div>
+                                            <div className="flex flex-col text-left">
+                                                <span className="text-base sm:text-lg font-black tracking-tight">Create Study Room</span>
+                                                <span className="text-xs text-cyan-100 font-medium">Host live video sessions with friends</span>
+                                            </div>
+                                        </div>
+                                        <Sparkles className="w-5.5 h-5.5 text-cyan-200 animate-pulse" />
+                                    </button>
+                                )}
+                                {onOpenCreatePost && (
+                                    <button
+                                        onClick={() => {
+                                            setIsMoreOpen(false);
+                                            onOpenCreatePost();
+                                        }}
+                                        className="w-full flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 text-white font-black text-sm shadow-xl active:scale-[0.98] transition-all min-h-[54px] cursor-pointer"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-xl bg-white/20 backdrop-blur-md">
+                                                <PlusSquare className="w-5 h-5" />
+                                            </div>
+                                            <span className="text-sm sm:text-base font-black">Create Post</span>
+                                        </div>
                                     </button>
                                 )}
                             </div>

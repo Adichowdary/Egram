@@ -8,6 +8,7 @@ import { RightSidebar } from "@/components/RightSidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { CreateMeetModal } from "@/components/CreateMeetModal";
 import { CreatePostModal } from "@/components/CreatePostModal";
+import { CreateStoryModal } from "@/components/CreateStoryModal";
 import { SplashScreen } from "@/components/SplashScreen";
 import { useToast } from "@/components/ToastProvider";
 import { motion, AnimatePresence } from "framer-motion";
@@ -27,6 +28,7 @@ export default function StudyPage() {
     const [loading, setLoading] = useState(!(typeof window !== "undefined" && auth?.currentUser));
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+    const [isStoryModalOpen, setIsStoryModalOpen] = useState(false);
 
     // Pomodoro Timer State
     const [mode, setMode] = useState<"focus" | "break">("focus");
@@ -278,10 +280,16 @@ export default function StudyPage() {
 
                         <RightSidebar user={user} handleSignOut={() => auth.signOut()} getInitials={getInitials} />
                     </main>
-                    <MobileNav onOpenCreatePost={() => setIsPostModalOpen(true)} onOpenCreateMeet={() => setIsModalOpen(true)} currentUserId={user.uid} />
+                    <MobileNav
+                        onOpenCreatePost={() => setIsPostModalOpen(true)}
+                        onOpenCreateMeet={() => setIsModalOpen(true)}
+                        onOpenCreateStory={() => setIsStoryModalOpen(true)}
+                        currentUserId={user.uid}
+                    />
 
                     <CreateMeetModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} user={user} getInitials={getInitials} />
                     <CreatePostModal isOpen={isPostModalOpen} onClose={() => setIsPostModalOpen(false)} user={user} />
+                    <CreateStoryModal isOpen={isStoryModalOpen} onClose={() => setIsStoryModalOpen(false)} currentUser={user} onStoryCreated={() => window.dispatchEvent(new Event("userProfileUpdated"))} />
                 </div>
             )}
         </>

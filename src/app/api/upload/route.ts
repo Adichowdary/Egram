@@ -47,9 +47,8 @@ export async function POST(req: Request) {
         }
 
         // 2. High-performance Fallback: Return optimized lightweight Data URL
-        // Ensures uploads NEVER fail even if third-party storage credentials are missing
         const base64 = buffer.toString('base64');
-        const mimeType = file.type || "image/jpeg";
+        const mimeType = file.type || (file.name.endsWith('.mp4') ? "video/mp4" : "image/jpeg");
         const dataUrl = `data:${mimeType};base64,${base64}`;
 
         return NextResponse.json({

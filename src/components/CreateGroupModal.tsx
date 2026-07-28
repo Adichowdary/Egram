@@ -73,13 +73,13 @@ export function CreateGroupModal({ isOpen, onClose, user, contacts, onGroupCreat
                 <div className="p-6 flex flex-col gap-6">
                     {/* Group Name Input */}
                     <div>
-                        <label className="block text-sm font-medium text-zinc-400 mb-2">Group Name</label>
+                        <label className="block text-sm font-black text-zinc-200 mb-2">Group Name</label>
                         <input
                             type="text"
                             value={groupName}
                             onChange={(e) => setGroupName(e.target.value)}
                             placeholder="Enter group name..."
-                            className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl px-4 py-3 text-white text-xs sm:text-sm font-medium placeholder:text-zinc-500 placeholder:font-normal outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition-all truncate"
+                            className="w-full bg-zinc-950 border border-zinc-700/80 rounded-2xl px-5 py-4 text-white text-base font-semibold placeholder:text-zinc-600 outline-none focus:border-[var(--primary)] transition-all shadow-inner"
                         />
                     </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { X, Image as ImageIcon, Sparkles, Send, Video } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { X, Image as ImageIcon, Sparkles, Send, Video, Globe, Star, Users, Check, UploadCloud } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/components/ToastProvider";
 
@@ -17,51 +17,92 @@ export function CreateStoryModal({ isOpen, onClose, currentUser, onStoryCreated 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [mediaPreview, setMediaPreview] = useState<string | null>(null);
     const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
+    const [audience, setAudience] = useState<'public' | 'close_friends' | 'students'>('public');
     const [isUploading, setIsUploading] = useState(false);
+    
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { addToast } = useToast();
+
+    // Clean up ObjectURL previews to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            if (mediaPreview && mediaPreview.startsWith('blob:')) {
+                URL.revokeObjectURL(mediaPreview);
+            }
+        };
+    }, [mediaPreview]);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            if (file.size > 30 * 1024 * 1024) {
-                addToast("Media size must be under 30MB", "error");
+            if (file.size > 50 * 1024 * 1024) {
+                addToast("Media file size must be under 50MB", "error");
                 return;
             }
+
             setSelectedFile(file);
-            const isVid = file.type.startsWith('video/');
+            const isVid = file.type.startsWith('video/') || file.name.match(/\.(mp4|webm|mov|m4v|ogg)$/i) !== null;
             setMediaType(isVid ? 'video' : 'image');
 
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                setMediaPreview(event.target?.result as string);
-            };
-            reader.readAsDataURL(file);
+            // Use fast ObjectURL preview
+            const objectUrl = URL.createObjectURL(file);
+            setMediaPreview(objectUrl);
         }
+    };
+
+    const handleResetMedia = () => {
+        if (mediaPreview && mediaPreview.startsWith('blob:')) {
+            URL.revokeObjectURL(mediaPreview);
+        }
+        setMediaPreview(null);
+        setSelectedFile(null);
+        setCaption("");
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!mediaPreview || !currentUser || isUploading) return;
+        if (!selectedFile && !mediaPreview) {
+            addToast("Please select an image or video to share", "error");
+            return;
+        }
+        if (!currentUser || isUploading) return;
 
         setIsUploading(true);
         try {
-            let finalMediaUrl = mediaPreview;
+            let finalMediaUrl = "";
 
             if (selectedFile) {
                 const formData = new FormData();
                 formData.append("file", selectedFile);
                 formData.append("bucket", "stories");
-                const uploadRes = await fetch("/api/upload", {
-                    method: "POST",
-                    body: formData,
-                });
-                if (uploadRes.ok) {
-                    const uploadData = await uploadRes.json();
-                    if (uploadData.url) {
-                        finalMediaUrl = uploadData.url;
+                
+                try {
+                    const uploadRes = await fetch("/api/upload", {
+                        method: "POST",
+                        body: formData,
+                    });
+                    if (uploadRes.ok) {
+                        const uploadData = await uploadRes.json();
+                        if (uploadData.url) {
+                            finalMediaUrl = uploadData.url;
+                        }
                     }
+                } catch (uploadErr) {
+                    console.error("Direct upload failed, using DataURL fallback:", uploadErr);
                 }
+            }
+
+            // Fallback to FileReader base64 if server upload endpoint is offline
+            if (!finalMediaUrl && selectedFile) {
+                finalMediaUrl = await new Promise<string>((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (evt) => resolve(evt.target?.result as string);
+                    reader.readAsDataURL(selectedFile);
+                });
+            }
+
+            if (!finalMediaUrl) {
+                throw new Error("Unable to prepare media for status");
             }
 
             const res = await fetch("/api/stories", {
@@ -73,29 +114,55 @@ export function CreateStoryModal({ isOpen, onClose, currentUser, onStoryCreated 
                     userAvatar: currentUser.photoURL || "",
                     mediaUrl: finalMediaUrl,
                     mediaType,
-                    caption
+                    caption,
+                    audience
                 })
             });
 
             if (res.ok) {
-                addToast("Status published! Active for 24 hours 🔥", "success");
-                setMediaPreview(null);
-                setSelectedFile(null);
-                setCaption("");
+                addToast("Status posted! Active on your story for 24 hours 🔥", "success");
+                handleResetMedia();
                 onStoryCreated();
                 onClose();
             } else {
-                addToast("Failed to publish status. Please try again.", "error");
+                addToast("Failed to publish story. Please try again.", "error");
             }
         } catch (error) {
             console.error("Error creating story:", error);
-            addToast("Failed to publish status", "error");
+            addToast("Failed to publish story", "error");
         } finally {
             setIsUploading(false);
         }
     };
 
     if (!isOpen) return null;
+
+    const audienceOptions = [
+        {
+            id: 'public',
+            label: 'Your Story',
+            desc: 'Visible to everyone in your circle (24h)',
+            icon: Globe,
+            gradient: 'from-amber-500 via-rose-500 to-purple-600',
+            badgeClass: 'bg-gradient-to-r from-amber-500 to-purple-600 text-white'
+        },
+        {
+            id: 'close_friends',
+            label: 'Close Friends',
+            desc: 'Shared exclusively with close friends',
+            icon: Star,
+            gradient: 'from-emerald-500 to-teal-600',
+            badgeClass: 'bg-emerald-500 text-white'
+        },
+        {
+            id: 'students',
+            label: 'Students Only',
+            desc: 'Visible to verified student circle',
+            icon: Users,
+            gradient: 'from-blue-600 to-cyan-500',
+            badgeClass: 'bg-blue-600 text-white'
+        }
+    ];
 
     return (
         <AnimatePresence>
@@ -104,26 +171,45 @@ export function CreateStoryModal({ isOpen, onClose, currentUser, onStoryCreated 
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={onClose}
-                className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4"
+                className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-2xl flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
             >
                 <motion.div
-                    initial={{ scale: 0.9, y: 20 }}
+                    initial={{ scale: 0.94, y: 25 }}
                     animate={{ scale: 1, y: 0 }}
-                    exit={{ scale: 0.9, y: 20 }}
+                    exit={{ scale: 0.94, y: 25 }}
+                    transition={{ type: "spring", damping: 26, stiffness: 320 }}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-2xl overflow-hidden relative"
+                    className="w-full max-w-xl bg-zinc-950 border-2 border-zinc-800 rounded-[36px] shadow-2xl overflow-hidden relative my-auto flex flex-col max-h-[92vh]"
                 >
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <Sparkles className="w-5 h-5 text-purple-400" />
-                            <h2 className="text-lg font-bold text-white">Add to Your Status</h2>
+                    {/* Instagram Story Top Header */}
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800/80 bg-zinc-900/60 backdrop-blur-md">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full p-0.5 bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600 shadow-md">
+                                <img
+                                    src={currentUser?.photoURL || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                                    alt="User"
+                                    className="w-full h-full rounded-full object-cover border border-zinc-900"
+                                />
+                            </div>
+                            <div className="flex flex-col">
+                                <h2 className="text-base sm:text-lg font-black text-white leading-tight flex items-center gap-1.5">
+                                    <span>Create Story</span>
+                                    <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
+                                </h2>
+                                <p className="text-xs text-zinc-400 font-medium">Instagram-style status update</p>
+                            </div>
                         </div>
-                        <button onClick={onClose} className="p-1.5 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-800 transition-colors">
-                            <X className="w-5 h-5" />
+
+                        <button
+                            onClick={onClose}
+                            className="p-2.5 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-800 transition-all min-w-[44px] min-h-[44px] flex items-center justify-center cursor-pointer"
+                        >
+                            <X className="w-6 h-6" />
                         </button>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmit} className="p-5 space-y-5 flex-1 flex flex-col justify-between">
+                        
                         <input
                             type="file"
                             ref={fileInputRef}
@@ -132,55 +218,130 @@ export function CreateStoryModal({ isOpen, onClose, currentUser, onStoryCreated 
                             className="hidden"
                         />
 
+                        {/* Media Upload / Preview Canvas */}
                         {mediaPreview ? (
-                            <div className="relative rounded-2xl overflow-hidden bg-black aspect-[4/5] flex items-center justify-center border border-zinc-800 group">
+                            <div className="relative rounded-[28px] overflow-hidden bg-black aspect-[9/12] max-h-[340px] sm:max-h-[380px] w-full flex items-center justify-center border-2 border-zinc-800 shadow-2xl group mx-auto">
                                 {mediaType === 'video' ? (
-                                    <video src={mediaPreview} controls autoPlay loop muted className="w-full h-full object-cover" />
+                                    <video
+                                        src={mediaPreview}
+                                        controls
+                                        autoPlay
+                                        loop
+                                        muted
+                                        playsInline
+                                        className="w-full h-full object-cover"
+                                    />
                                 ) : (
-                                    <img src={mediaPreview} alt="Story preview" className="w-full h-full object-cover" />
+                                    <img
+                                        src={mediaPreview}
+                                        alt="Story Preview"
+                                        className="w-full h-full object-cover"
+                                    />
                                 )}
+
+                                {/* Overlay Caption Badge Preview */}
+                                {caption.trim() && (
+                                    <div className="absolute bottom-4 left-4 right-4 bg-black/75 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/20 text-center shadow-xl">
+                                        <p className="text-sm font-bold text-white leading-snug break-words">{caption}</p>
+                                    </div>
+                                )}
+
                                 <button
                                     type="button"
-                                    onClick={() => { setMediaPreview(null); setSelectedFile(null); }}
-                                    className="absolute top-3 right-3 p-2 bg-black/60 text-white rounded-full hover:bg-black/90 transition-colors z-20"
+                                    onClick={handleResetMedia}
+                                    className="absolute top-3 right-3 p-2.5 bg-black/75 text-white rounded-full hover:bg-black/90 transition-all z-30 shadow-lg cursor-pointer hover:scale-105 active:scale-95"
+                                    title="Remove & Pick New Media"
                                 >
-                                    <X className="w-4 h-4" />
+                                    <X className="w-5 h-5" />
                                 </button>
                             </div>
                         ) : (
                             <div
                                 onClick={() => fileInputRef.current?.click()}
-                                className="border-2 border-dashed border-zinc-700 hover:border-purple-500 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-colors bg-zinc-950/50 group"
+                                className="border-3 border-dashed border-zinc-700 hover:border-purple-500/80 rounded-[30px] p-8 sm:p-10 flex flex-col items-center justify-center cursor-pointer transition-all bg-zinc-900/40 hover:bg-zinc-900/80 group min-h-[220px] shadow-inner"
                             >
-                                <div className="w-14 h-14 rounded-full bg-purple-500/10 text-purple-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                    <Video className="w-7 h-7" />
+                                <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-purple-600 via-pink-500 to-amber-400 text-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-xl shadow-purple-600/30">
+                                    <UploadCloud className="w-8 h-8" />
                                 </div>
-                                <span className="text-sm font-bold text-zinc-200 mb-1">Upload Photo or Video Status</span>
-                                <span className="text-xs text-zinc-500 text-center">Share short video clips or images with your circle (24h)</span>
+                                <span className="text-base sm:text-lg font-black text-white mb-1.5 text-center">
+                                    Upload Photo or Video Status
+                                </span>
+                                <span className="text-xs sm:text-sm text-zinc-400 text-center font-medium max-w-xs">
+                                    Select any image (JPG, PNG) or video (MP4, MOV) from your device to share (24h)
+                                </span>
+                                <div className="mt-4 px-4 py-2 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-bold flex items-center gap-2">
+                                    <Video className="w-4 h-4" />
+                                    <span>Supports photos & videos up to 50MB</span>
+                                </div>
                             </div>
                         )}
 
-                        <div>
+                        {/* Extra Large Add Caption Field */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between ml-1">
+                                <label className="text-sm sm:text-base font-black text-white">Add Caption</label>
+                                <span className="text-xs font-bold text-zinc-400">{caption.length}/150</span>
+                            </div>
                             <input
                                 type="text"
+                                maxLength={150}
                                 value={caption}
                                 onChange={(e) => setCaption(e.target.value)}
-                                placeholder="Add a caption..."
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder:text-zinc-500 outline-none focus:border-purple-500 transition-colors"
+                                placeholder="Type a story caption or quote..."
+                                className="w-full bg-zinc-900 border-2 border-zinc-700/90 focus:border-purple-500 rounded-2xl px-5 py-4 sm:py-4.5 text-base sm:text-lg text-white font-bold placeholder:text-zinc-500 focus:outline-none transition-all shadow-inner"
                             />
                         </div>
 
+                        {/* Extra Large Sharing Status & Audience Options (Instagram Style) */}
+                        <div className="space-y-2.5">
+                            <label className="text-sm sm:text-base font-black text-white ml-1">Sharing Status & Audience</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                {audienceOptions.map((opt) => {
+                                    const Icon = opt.icon;
+                                    const isSelected = audience === opt.id;
+                                    return (
+                                        <button
+                                            key={opt.id}
+                                            type="button"
+                                            onClick={() => setAudience(opt.id as any)}
+                                            className={`flex sm:flex-col items-center justify-between sm:justify-center gap-3 p-3.5 sm:p-4 rounded-2xl border-2 transition-all cursor-pointer text-left sm:text-center ${
+                                                isSelected
+                                                    ? "bg-purple-600/20 border-purple-500 text-white shadow-xl scale-[1.02]"
+                                                    : "bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+                                            }`}
+                                        >
+                                            <div className="flex items-center sm:flex-col gap-2.5">
+                                                <div className={`p-2.5 rounded-xl ${isSelected ? opt.badgeClass : "bg-zinc-800 text-zinc-300"}`}>
+                                                    <Icon className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs sm:text-sm font-black leading-tight">{opt.label}</p>
+                                                    <p className="text-[10px] text-zinc-400 font-medium hidden sm:block mt-1">{opt.desc}</p>
+                                                </div>
+                                            </div>
+                                            {isSelected && (
+                                                <div className="w-5 h-5 rounded-full bg-purple-500 text-white flex items-center justify-center">
+                                                    <Check className="w-3.5 h-3.5" />
+                                                </div>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Full Width Signature Instagram Share Button */}
                         <button
                             type="submit"
                             disabled={!mediaPreview || isUploading}
-                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white py-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-purple-600/30"
+                            className="w-full mt-2 py-4.5 sm:py-5 rounded-2xl font-black text-base sm:text-lg text-white bg-gradient-to-r from-amber-500 via-pink-600 to-purple-600 hover:brightness-110 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-3 shadow-2xl shadow-purple-600/40 cursor-pointer"
                         >
                             {isUploading ? (
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
                             ) : (
                                 <>
-                                    <span>Share Status</span>
-                                    <Send className="w-4 h-4" />
+                                    <Send className="w-5.5 h-5.5" />
+                                    <span>Share to Your Story</span>
                                 </>
                             )}
                         </button>

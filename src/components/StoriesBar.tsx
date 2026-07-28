@@ -82,19 +82,19 @@ export function StoriesBar({ currentUser, getInitials }: StoriesBarProps) {
                     {/* Add Story Button */}
                     <div
                         onClick={() => setIsCreateStoryOpen(true)}
-                        className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group"
+                        className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group active:scale-95 transition-transform"
                     >
-                        <div className="w-16 h-16 rounded-full bg-zinc-900 border-2 border-dashed border-purple-500/50 flex items-center justify-center relative group-hover:scale-105 transition-transform">
+                        <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-zinc-900 border-2 border-dashed border-purple-500/70 flex items-center justify-center relative group-hover:scale-105 transition-transform shadow-lg">
                             {myAvatar || currentUser?.photoURL ? (
                                 <img src={myAvatar || currentUser.photoURL || ""} alt="Avatar" className="w-full h-full rounded-full object-cover p-0.5" />
                             ) : (
-                                <span className="text-sm font-black text-white">{getInitials(currentUser?.displayName || currentUser?.email)}</span>
+                                <span className="text-base font-black text-white">{getInitials(currentUser?.displayName || currentUser?.email)}</span>
                             )}
-                            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-black shadow-lg border-2 border-zinc-900">
-                                <Plus className="w-3.5 h-3.5" />
+                            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-r from-amber-500 to-purple-600 text-white flex items-center justify-center text-xs font-black shadow-lg border-2 border-zinc-900">
+                                <Plus className="w-4 h-4" />
                             </div>
                         </div>
-                        <span className="text-[10px] font-bold text-zinc-400 group-hover:text-white">Your Story</span>
+                        <span className="text-xs font-extrabold text-zinc-300 group-hover:text-white">Your Story</span>
                     </div>
 
                     {/* Real Active User Stories */}
@@ -103,29 +103,29 @@ export function StoriesBar({ currentUser, getInitials }: StoriesBarProps) {
                             <div
                                 key={storyUser.id}
                                 onClick={() => setActiveStoryIndex(idx)}
-                                className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group"
+                                className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group active:scale-95 transition-transform"
                             >
-                                <div className={`w-16 h-16 rounded-full p-0.5 relative transition-transform group-hover:scale-105 ${
+                                <div className={`w-18 h-18 sm:w-20 sm:h-20 rounded-full p-0.5 relative transition-transform group-hover:scale-105 shadow-md ${
                                     storyUser.hasUnseen
-                                        ? "bg-gradient-to-tr from-purple-600 via-pink-500 to-orange-400"
+                                        ? "bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600"
                                         : "bg-zinc-700"
                                 }`}>
                                     <div className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center border-2 border-zinc-900 overflow-hidden">
                                         {storyUser.avatar ? (
                                             <img src={storyUser.avatar} alt={storyUser.name} className="w-full h-full object-cover" />
                                         ) : (
-                                            <span className="text-xs font-black text-white">{getInitials(storyUser.name)}</span>
+                                            <span className="text-sm font-black text-white">{getInitials(storyUser.name)}</span>
                                         )}
                                     </div>
                                 </div>
-                                <span className="text-[10px] font-bold text-zinc-300 truncate max-w-[64px]">
+                                <span className="text-xs font-bold text-zinc-300 truncate max-w-[72px]">
                                     {storyUser.name}
                                 </span>
                             </div>
                         ))
                     ) : (
-                        <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-[var(--accent-bg)] border border-dashed border-[var(--card-border)] text-xs text-zinc-400 font-bold">
-                            <Camera className="w-4 h-4 opacity-50 text-purple-400" />
+                        <div className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-[var(--accent-bg)] border border-dashed border-[var(--card-border)] text-xs text-zinc-400 font-bold shadow-sm">
+                            <Camera className="w-4 h-4 text-purple-400" />
                             <span>No active stories yet</span>
                         </div>
                     )}

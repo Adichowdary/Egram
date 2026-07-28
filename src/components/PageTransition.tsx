@@ -10,12 +10,14 @@ interface PageTransitionProps {
 export function PageTransition({ children }: PageTransitionProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -15 }}
+      initial={{ opacity: 0, y: 12, scale: 0.99 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -12, scale: 0.99 }}
       transition={{ 
-        duration: 0.12, 
-        ease: "easeOut"
+        type: "spring",
+        stiffness: 350,
+        damping: 30,
+        mass: 0.8
       }}
       className="w-full h-full"
     >
