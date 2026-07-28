@@ -135,12 +135,24 @@ export default function MessagesPage() {
                 router.push("/login");
             }
         });
-        return () => unsubscribe();
+
+        const handleProfileUpdate = () => {
+            if (auth?.currentUser?.uid) {
+                fetchContacts(auth.currentUser.uid);
+            }
+        };
+
+        window.addEventListener("userProfileUpdated", handleProfileUpdate);
+
+        return () => {
+            unsubscribe();
+            window.removeEventListener("userProfileUpdated", handleProfileUpdate);
+        };
     }, [router]);
 
     const fetchContacts = async (uid: string) => {
         try {
-            const res = await fetch(`/api/users/${uid}`);
+            const res = await fetch(`/api/users/${uid}?t=${Date.now()}`, { cache: "no-store" });
             if (res.ok) {
                 const userData = await res.json();
                 if (userData.chatWallpapers) setChatWallpapers(userData.chatWallpapers);
@@ -151,7 +163,7 @@ export default function MessagesPage() {
 
                 const contactIds = Array.from(new Set([...(userData.following || []), ...(userData.followers || [])])) as string[];
                 if (contactIds.length > 0) {
-                    const contactsRes = await fetch(`/api/users?ids=${contactIds.join(',')}`);
+                    const contactsRes = await fetch(`/api/users?ids=${contactIds.join(',')}&t=${Date.now()}`, { cache: "no-store" });
                     if (contactsRes.ok) {
                         const contactsResult = await contactsRes.json();
                         setConversations(contactsResult.data || []);

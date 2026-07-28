@@ -66,8 +66,8 @@ export function UserCard({ profile, isFollowing, onFollow, showFollowButton = tr
                         className="w-full h-full rounded-full flex items-center justify-center overflow-hidden"
                         style={{ background: "var(--card-bg)", border: "2px solid var(--card-bg)" }}
                     >
-                        {profile.photoURL ? (
-                            <img src={profile.photoURL} alt={profile.displayName || "User"} className="w-full h-full object-cover" />
+                        {profile.photoURL || (profile as any).avatarUrl ? (
+                            <img src={profile.photoURL || (profile as any).avatarUrl || ""} alt={profile.displayName || "User"} className="w-full h-full object-cover" />
                         ) : (
                             <span className="text-lg sm:text-xl font-black uppercase" style={{ color: "var(--primary)" }}>
                                 {getInitials(profile.displayName)}

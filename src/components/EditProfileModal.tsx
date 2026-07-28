@@ -127,7 +127,15 @@ export function EditProfileModal({ isOpen, onClose, user, currentData, onProfile
                     await updateProfile(auth.currentUser, { displayName: name.trim() }).catch(() => {});
                 }
 
-                window.dispatchEvent(new Event("userProfileUpdated"));
+                // Sync to Firestore for real-time listeners & stories
+                try {
+                    const userRef = doc(db, "users", user.uid);
+                    await setDoc(userRef, { displayName: name.trim(), photoURL: avatarUrl, avatarUrl }, { merge: true });
+                } catch (e) {
+                    console.error("Firestore sync error:", e);
+                }
+
+                window.dispatchEvent(new CustomEvent("userProfileUpdated", { detail: { avatarUrl, name: name.trim() } }));
                 onProfileUpdated(updatedPayload);
                 addToast("Profile updated successfully!", "success");
                 onClose();

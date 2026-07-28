@@ -26,6 +26,20 @@ export async function GET() {
 
         // Combine DB stories and active in-memory fallback stories
         const combined = [...rawStories, ...inMemoryStories.filter(s => new Date(s.expiresAt) > now)];
+        const userIds = Array.from(new Set(combined.map(s => s.userId)));
+
+        let userAvatarMap: Record<string, { avatarUrl?: string; name?: string }> = {};
+        if (conn && userIds.length > 0) {
+            try {
+                const User = (await import('@/models/User')).default;
+                const dbUsers = await User.find({ firebaseUid: { $in: userIds } }).select('firebaseUid avatarUrl name').lean();
+                dbUsers.forEach((u: any) => {
+                    userAvatarMap[u.firebaseUid] = { avatarUrl: u.avatarUrl, name: u.name };
+                });
+            } catch (e) {
+                console.error("Error populating story user avatars:", e);
+            }
+        }
 
         // Group stories by userId for Instagram-style story bubbles
         const userStoryMap = new Map<string, any>();
@@ -39,11 +53,15 @@ export async function GET() {
                 timestamp: story.createdAt
             };
 
+            const latestUser = userAvatarMap[uId];
+            const resolvedAvatar = latestUser?.avatarUrl || story.userAvatar || "";
+            const resolvedName = latestUser?.name || story.userName;
+
             if (!userStoryMap.has(uId)) {
                 userStoryMap.set(uId, {
                     id: uId,
-                    name: story.userName,
-                    avatar: story.userAvatar || "",
+                    name: resolvedName,
+                    avatar: resolvedAvatar,
                     hasUnseen: true,
                     stories: [storyObj]
                 });

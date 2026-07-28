@@ -23,10 +23,26 @@ export function StoriesBar({ currentUser, getInitials }: StoriesBarProps) {
     const [realStories, setRealStories] = useState<StoryUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [isCreateStoryOpen, setIsCreateStoryOpen] = useState(false);
+    const [myAvatar, setMyAvatar] = useState<string | null>(() => currentUser?.photoURL || null);
+
+    const fetchMyAvatar = async () => {
+        if (!currentUser?.uid) return;
+        try {
+            const res = await fetch(`/api/users/${currentUser.uid}?t=${Date.now()}`, { cache: "no-store" });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.avatarUrl) {
+                    setMyAvatar(data.avatarUrl);
+                }
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
     const fetchStories = async () => {
         try {
-            const res = await fetch("/api/stories");
+            const res = await fetch(`/api/stories?t=${Date.now()}`, { cache: "no-store" });
             if (res.ok) {
                 const data = await res.json();
                 setRealStories(data.stories || []);
@@ -39,8 +55,24 @@ export function StoriesBar({ currentUser, getInitials }: StoriesBarProps) {
     };
 
     useEffect(() => {
+        if (currentUser?.uid) {
+            setMyAvatar(currentUser.photoURL || null);
+            fetchMyAvatar();
+        }
         fetchStories();
-    }, []);
+
+        const handleProfileUpdate = (e: Event) => {
+            const customEvt = e as CustomEvent;
+            if (customEvt?.detail?.avatarUrl) {
+                setMyAvatar(customEvt.detail.avatarUrl);
+            }
+            fetchMyAvatar();
+            fetchStories();
+        };
+
+        window.addEventListener("userProfileUpdated", handleProfileUpdate);
+        return () => window.removeEventListener("userProfileUpdated", handleProfileUpdate);
+    }, [currentUser?.uid]);
 
     return (
         <>
@@ -53,8 +85,8 @@ export function StoriesBar({ currentUser, getInitials }: StoriesBarProps) {
                         className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group"
                     >
                         <div className="w-16 h-16 rounded-full bg-zinc-900 border-2 border-dashed border-purple-500/50 flex items-center justify-center relative group-hover:scale-105 transition-transform">
-                            {currentUser?.photoURL ? (
-                                <img src={currentUser.photoURL} alt="Avatar" className="w-full h-full rounded-full object-cover p-0.5" />
+                            {myAvatar || currentUser?.photoURL ? (
+                                <img src={myAvatar || currentUser.photoURL || ""} alt="Avatar" className="w-full h-full rounded-full object-cover p-0.5" />
                             ) : (
                                 <span className="text-sm font-black text-white">{getInitials(currentUser?.displayName || currentUser?.email)}</span>
                             )}
