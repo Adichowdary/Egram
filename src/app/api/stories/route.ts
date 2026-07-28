@@ -46,10 +46,14 @@ export async function GET() {
 
         for (const story of combined) {
             const uId = story.userId;
+            const isVideo = story.mediaType === 'video' || !!story.mediaUrl?.match(/\.(mp4|webm|mov|ogg|m4v)/i) || story.mediaUrl?.includes('/video/');
             const storyObj = {
                 id: story._id?.toString() || story.id,
                 mediaUrl: story.mediaUrl,
+                mediaType: isVideo ? 'video' : 'image',
                 caption: story.caption || "",
+                views: story.views || [],
+                likes: story.likes || [],
                 timestamp: story.createdAt
             };
 
@@ -81,11 +85,13 @@ export async function GET() {
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { userId, userName, userAvatar, mediaUrl, caption } = body;
+        const { userId, userName, userAvatar, mediaUrl, mediaType, caption } = body;
 
         if (!userId || !userName || !mediaUrl) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
+
+        const isVideo = mediaType === 'video' || !!mediaUrl.match(/\.(mp4|webm|mov|ogg|m4v)/i) || mediaUrl.includes('/video/');
 
         const now = new Date();
         const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
@@ -99,7 +105,10 @@ export async function POST(req: Request) {
                 userName,
                 userAvatar: userAvatar || "",
                 mediaUrl,
+                mediaType: isVideo ? 'video' : 'image',
                 caption: caption || "",
+                views: [],
+                likes: [],
                 createdAt: now,
                 expiresAt
             });
@@ -111,16 +120,74 @@ export async function POST(req: Request) {
             userName,
             userAvatar: userAvatar || "",
             mediaUrl,
+            mediaType: isVideo ? 'video' : 'image',
             caption: caption || "",
+            views: [],
+            likes: [],
             createdAt: now.toISOString(),
             expiresAt: expiresAt.toISOString()
         };
 
-        inMemoryStories.unshift(storyObj);
+        inMemoryStories.unshift(storyObj as any);
 
         return NextResponse.json({ success: true, story: storyObj }, { status: 201 });
     } catch (error: any) {
         console.error("Error posting story:", error);
         return NextResponse.json({ error: "Failed to create story" }, { status: 500 });
+    }
+}
+
+export async function PUT(req: Request) {
+    try {
+        const body = await req.json();
+        const { storyId, action, userId, userName, userAvatar } = body;
+
+        if (!storyId || !action || !userId) {
+            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        }
+
+        const conn = await connectMongo();
+        if (!conn) {
+            return NextResponse.json({ success: true });
+        }
+
+        const story = await Story.findById(storyId);
+        if (!story) {
+            return NextResponse.json({ error: "Story not found" }, { status: 404 });
+        }
+
+        if (action === 'view') {
+            const alreadyViewed = story.views?.some((v: any) => v.userId === userId);
+            if (!alreadyViewed) {
+                story.views.push({
+                    userId,
+                    name: userName || "User",
+                    avatar: userAvatar || "",
+                    viewedAt: new Date()
+                });
+                await story.save();
+            }
+        } else if (action === 'like') {
+            const likeIndex = story.likes?.findIndex((l: any) => l.userId === userId);
+            if (likeIndex > -1) {
+                story.likes.splice(likeIndex, 1);
+            } else {
+                story.likes.push({
+                    userId,
+                    name: userName || "User",
+                    avatar: userAvatar || ""
+                });
+            }
+            await story.save();
+        }
+
+        return NextResponse.json({
+            success: true,
+            views: story.views || [],
+            likes: story.likes || []
+        });
+    } catch (error: any) {
+        console.error("Error updating story action:", error);
+        return NextResponse.json({ error: "Failed to update story" }, { status: 500 });
     }
 }
