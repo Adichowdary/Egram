@@ -104,6 +104,7 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
     };
 
     const handleShare = async () => {
+        setShowMenu(false);
         try {
             await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
             addToast("🎉 Post link copied to clipboard!", "success");
@@ -188,6 +189,7 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
     };
 
     const handleDelete = async () => {
+        setShowMenu(false);
         try {
             await deletePost(post.id);
             if (onDelete) {
@@ -231,7 +233,6 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                             <CheckCircle2 className="w-4.5 h-4.5 text-blue-500 fill-blue-500/20 flex-shrink-0" />
                         </div>
                         <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold" style={{ color: "var(--text-light)" }}>
-                            {/* Plain text Student badge (non-clickable) */}
                             <span className="px-2.5 py-0.5 rounded-full font-semibold text-xs select-none" style={{ backgroundColor: "var(--primary-bg)", color: "var(--primary)" }}>Student</span>
                             <span>•</span>
                             <span>{post.timestamp?.toDate() ? getTimeAgo(post.timestamp) : "Just now"}</span>
@@ -239,7 +240,7 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                     </div>
                 </div>
 
-                {/* More options three-dots button with mr-1.5 padding */}
+                {/* More options three-dots button with expanded dropdown menu sizing */}
                 <div className="relative flex-shrink-0 mr-1.5">
                     <button 
                         onClick={() => setShowMenu(!showMenu)}
@@ -257,23 +258,25 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: -10 }}
                                 transition={{ type: "spring", damping: 20, stiffness: 300 }}
-                                className="absolute right-0 mt-2 w-52 border rounded-xl shadow-2xl z-50 overflow-hidden p-2 space-y-1"
-                                style={{ backgroundColor: "var(--accent-bg)", borderColor: "var(--card-border)" }}
+                                className="absolute right-0 mt-2 w-60 border rounded-2xl shadow-2xl z-50 overflow-hidden p-3 space-y-2"
+                                style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}
                             >
                                 <button
                                     onClick={handleShare}
-                                    className="w-full text-left px-4 py-2.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center gap-2.5"
-                                    style={{ color: "var(--text-dark)" }}
+                                    className="w-full text-left px-4 py-3 text-sm sm:text-base font-extrabold rounded-xl transition-all flex items-center gap-3 cursor-pointer min-h-[48px]"
+                                    style={{ color: "var(--text-dark)", backgroundColor: "var(--accent-bg)" }}
                                 >
-                                    <Share className="w-4.5 h-4.5 text-blue-500" /> Share / Copy Link
+                                    <Share className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                                    <span>Share / Copy Link</span>
                                 </button>
 
                                 {post.authorId === user.uid && (
                                     <button
                                         onClick={handleDelete}
-                                        className="w-full text-left px-4 py-2.5 text-xs sm:text-sm font-bold text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all flex items-center gap-2.5"
+                                        className="w-full text-left px-4 py-3 text-sm sm:text-base font-extrabold text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all flex items-center gap-3 cursor-pointer min-h-[48px]"
                                     >
-                                        <Trash2 className="w-4.5 h-4.5" /> Delete Post
+                                        <Trash2 className="w-5 h-5 flex-shrink-0" />
+                                        <span>Delete Post</span>
                                     </button>
                                 )}
                             </motion.div>
@@ -374,7 +377,7 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                 )}
             </div>
 
-            {/* 5. Integrated Comments Drawer Widget - Nested Replies & Hover Controls */}
+            {/* 5. Integrated Comments Drawer Widget */}
             <AnimatePresence>
                 {showComments && (
                     <motion.div
@@ -397,7 +400,7 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                                 comments.map((comment, index) => {
                                     const canDelete = comment.authorId === user.uid || post.authorId === user.uid;
                                     const isCommentLiked = !!commentLikes[comment.id];
-                                    const isReply = !!comment.parentId || index > 0; // Visual reply nesting formatting
+                                    const isReply = !!comment.parentId || index > 0;
 
                                     return (
                                         <motion.div 
@@ -456,7 +459,7 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                             )}
                         </div>
 
-                        {/* Interactive Comment Input Form with Button Pill */}
+                        {/* Comment Input Form */}
                         <form onSubmit={handleAddComment} className="flex items-center gap-2 px-4 py-3 border-t min-h-[56px]" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
                             <input
                                 type="text"

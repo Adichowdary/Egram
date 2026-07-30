@@ -8,14 +8,14 @@ export async function GET(req: Request) {
     try {
         const db = await connectMongo();
         if (!db) {
-            return NextResponse.json([], { status: 200 });
+            return NextResponse.json({ success: true, data: [] }, { status: 200 });
         }
 
         const { searchParams } = new URL(req.url);
         const query = searchParams.get("q");
 
         if (!query || !query.trim()) {
-            return NextResponse.json([], { status: 200 });
+            return NextResponse.json({ success: true, data: [] }, { status: 200 });
         }
 
         const trimmedQuery = query.trim();
@@ -33,13 +33,12 @@ export async function GET(req: Request) {
 
         const users = await User.find(filter)
             .select("firebaseUid name email avatarUrl bio followersCount followingCount currentStreak")
-            .limit(25)
+            .limit(30)
             .lean();
 
-        return NextResponse.json(users, { status: 200 });
-
+        return NextResponse.json({ success: true, data: users }, { status: 200 });
     } catch (error: any) {
         console.error("Error searching users:", error);
-        return NextResponse.json([], { status: 200 });
+        return NextResponse.json({ success: true, data: [] }, { status: 200 });
     }
 }

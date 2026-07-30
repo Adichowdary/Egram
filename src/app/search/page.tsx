@@ -22,21 +22,22 @@ export default function SearchPage() {
                 const res = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`);
                 if (res.ok) {
                     const data = await res.json();
-                    setResults(data.data || []);
+                    const list = Array.isArray(data) ? data : (data.data || []);
+                    setResults(list);
                 }
             } catch (err) {
                 console.error(err);
             } finally {
                 setLoading(false);
             }
-        }, 300);
+        }, 200);
 
         return () => clearTimeout(handler);
     }, [query]);
 
     return (
         <div className="feed-column space-y-6">
-            {/* Header & Search Bar - Generous Vertical Spacing & Shifted Search Icon */}
+            {/* Header & Search Bar - No Placeholders as Requested */}
             <div className="glass-card p-5 sm:p-6 border rounded-2xl shadow-md space-y-5" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight" style={{ color: "var(--text-dark)" }}>Search Egram</h1>
                 
@@ -46,13 +47,13 @@ export default function SearchPage() {
                         type="text"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search students, topics, or study rooms..."
+                        placeholder=""
                         className="w-full border rounded-2xl pl-12 pr-4 py-3.5 text-sm sm:text-base font-medium outline-none transition-all min-h-[48px]"
                         style={{ backgroundColor: "var(--accent-bg)", borderColor: "var(--card-border)", color: "var(--text-dark)" }}
                     />
                 </div>
 
-                {/* Filter Chips - Uniform Horizontal Padding & Full Contrast */}
+                {/* Filter Chips */}
                 <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar pt-1">
                     {[
                         { id: "all", label: "All Results" },
@@ -79,7 +80,7 @@ export default function SearchPage() {
                 </div>
             </div>
 
-            {/* Results & Empty State Container */}
+            {/* Results Container */}
             <div className="space-y-3">
                 {loading ? (
                     <div className="p-8 text-center text-sm font-bold flex items-center justify-center gap-2" style={{ color: "var(--text-light)" }}>
@@ -98,7 +99,7 @@ export default function SearchPage() {
                             <Search className="w-8 h-8 sm:w-10 sm:h-10 text-blue-500 opacity-70" />
                             <p className="text-base sm:text-lg font-black" style={{ color: "var(--text-dark)" }}>Search across Egram</p>
                             <p className="text-xs sm:text-sm font-medium max-w-sm" style={{ color: "var(--text-dark)", opacity: 0.85 }}>
-                                Find classmates, machine learning study rooms, and trending topics.
+                                Type any name or email to find student profiles and study rooms.
                             </p>
                         </div>
                     )
