@@ -97,20 +97,22 @@ export function CreatePostModal({ isOpen, onClose, user }: CreatePostModalProps)
                     exit={{ opacity: 0 }}
                 >
                     <motion.div
-                        className="bg-[#1e1e1e] w-full max-w-lg p-6 sm:p-7 border border-[rgba(255,255,255,0.08)] rounded-2xl shadow-2xl space-y-5 relative"
+                        className="w-full max-w-lg p-6 sm:p-7 border rounded-2xl shadow-2xl space-y-5 relative"
+                        style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}
                         onClick={e => e.stopPropagation()}
                         initial={{ scale: 0.94, y: 20 }}
                         animate={{ scale: 1, y: 0 }}
                         exit={{ scale: 0.94, y: 20 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
                     >
-                        <div className="flex items-center justify-between pb-3.5 border-b border-[rgba(255,255,255,0.08)]">
-                            <div className="flex items-center gap-2">
-                                <Sparkles className="w-5 h-5 text-blue-400" />
-                                <h2 className="text-lg font-bold text-white tracking-tight">Create Post</h2>
+                        <div className="flex items-center justify-between pb-3.5 border-b" style={{ borderColor: "var(--card-border)" }}>
+                            <div className="flex items-center gap-2.5">
+                                <Sparkles className="w-5.5 h-5.5 text-blue-500" />
+                                <h2 className="text-lg sm:text-xl font-black tracking-tight" style={{ color: "var(--text-dark)" }}>Create Post</h2>
                             </div>
                             <button 
-                                className="p-2 rounded-full bg-[#242424] text-[#a0a0a0] hover:text-white transition-all cursor-pointer border border-[rgba(255,255,255,0.08)]"
+                                className="p-2.5 rounded-full transition-all cursor-pointer border min-w-[44px] min-h-[44px] flex items-center justify-center"
+                                style={{ backgroundColor: "var(--accent-bg)", borderColor: "var(--card-border)", color: "var(--text-light)" }}
                                 onClick={onClose}
                             >
                                 <X size={18} />
@@ -121,12 +123,13 @@ export function CreatePostModal({ isOpen, onClose, user }: CreatePostModalProps)
                             <textarea
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
-                                className="w-full bg-[#242424] border border-[rgba(255,255,255,0.08)] rounded-xl p-4 text-xs sm:text-sm text-white placeholder:text-[#a0a0a0] focus:outline-none focus:border-blue-500 resize-none h-36 leading-relaxed"
+                                className="w-full border rounded-xl p-4 text-sm sm:text-base font-medium focus:outline-none focus:border-blue-500 resize-none h-36 leading-relaxed"
+                                style={{ backgroundColor: "var(--accent-bg)", borderColor: "var(--card-border)", color: "var(--text-dark)" }}
                                 placeholder="What are you studying or building today? Share your progress, code, or thoughts..."
                             />
 
                             {imagePreview && (
-                                <div className="relative rounded-xl overflow-hidden border border-[rgba(255,255,255,0.08)] aspect-video bg-black/60">
+                                <div className="relative rounded-xl overflow-hidden border aspect-video bg-black/60" style={{ borderColor: "var(--card-border)" }}>
                                     <img src={imagePreview} className="w-full h-full object-cover" alt="Preview" />
                                     <button 
                                         onClick={() => { setImageFile(null); setImagePreview(null); }}
@@ -138,12 +141,13 @@ export function CreatePostModal({ isOpen, onClose, user }: CreatePostModalProps)
                             )}
 
                             {/* Action Buttons Box */}
-                            <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#242424] border border-[rgba(255,255,255,0.08)]">
+                            <div className="flex items-center justify-between p-4 rounded-xl border" style={{ backgroundColor: "var(--accent-bg)", borderColor: "var(--card-border)" }}>
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#1e1e1e] border border-[rgba(255,255,255,0.08)] hover:border-blue-500/40 transition-all text-xs font-bold text-white cursor-pointer"
+                                    className="flex items-center gap-2.5 px-5 py-3 rounded-xl border hover:border-blue-500/40 transition-all text-sm sm:text-base font-extrabold cursor-pointer min-h-[48px]"
+                                    style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)", color: "var(--text-dark)" }}
                                 >
-                                    <ImageIcon size={16} className="text-emerald-400" />
+                                    <ImageIcon className="w-5 h-5 text-emerald-500" />
                                     <span>Attach Media</span>
                                 </button>
                                 <input 
@@ -157,12 +161,12 @@ export function CreatePostModal({ isOpen, onClose, user }: CreatePostModalProps)
                                 <button
                                     onClick={handleSubmit}
                                     disabled={isSubmitting || (!content.trim() && !imageFile)}
-                                    className="flex items-center gap-2 bg-[#3b82f6] text-white px-5 py-2.5 rounded-lg font-bold text-xs hover:bg-blue-600 disabled:opacity-40 shadow-md transition-all cursor-pointer"
+                                    className="flex items-center gap-2.5 bg-blue-500 text-white px-5 py-3 rounded-xl font-extrabold text-sm sm:text-base hover:bg-blue-600 disabled:opacity-40 shadow-md transition-all cursor-pointer min-h-[48px]"
                                 >
                                     {isSubmitting ? (
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     ) : (
-                                        <Send size={14} />
+                                        <Send className="w-5 h-5" />
                                     )}
                                     <span>{isSubmitting ? "Publishing..." : "Publish Post"}</span>
                                 </button>

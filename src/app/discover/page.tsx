@@ -155,14 +155,14 @@ export default function DiscoverPage() {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 flex-shrink-0">
+                                <div className="flex items-center gap-2.5 flex-shrink-0">
                                     {student.currentStreak > 0 && (
-                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20">
+                                        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20">
                                             🔥 {student.currentStreak}d
                                         </span>
                                     )}
-                                    <span className="px-3.5 py-1.5 rounded-full border text-xs font-bold text-blue-500" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
-                                        View
+                                    <span className="px-5 py-2.5 rounded-full border text-xs sm:text-sm font-bold text-blue-500 min-h-[44px] flex items-center justify-center" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+                                        View Profile
                                     </span>
                                 </div>
                             </Link>

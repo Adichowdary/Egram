@@ -447,11 +447,11 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
 
                                             <button 
                                                 onClick={() => handleToggleCommentLike(comment.id)}
-                                                className={`p-1.5 transition-colors cursor-pointer ${isCommentLiked ? 'text-rose-500' : ''}`}
+                                                className={`p-2 transition-colors cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center ${isCommentLiked ? 'text-rose-500' : ''}`}
                                                 style={{ color: isCommentLiked ? undefined : "var(--text-light)" }}
                                                 aria-label="Like comment"
                                             >
-                                                <Heart className={`w-4 h-4 ${isCommentLiked ? 'fill-current' : ''}`} />
+                                                <Heart className={`w-4.5 h-4.5 ${isCommentLiked ? 'fill-current' : ''}`} />
                                             </button>
                                         </motion.div>
                                     );
@@ -460,21 +460,21 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                         </div>
 
                         {/* Comment Input Form */}
-                        <form onSubmit={handleAddComment} className="flex items-center gap-2 px-4 py-3 border-t min-h-[56px]" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+                        <form onSubmit={handleAddComment} className="flex items-center gap-3 px-4 py-3.5 border-t min-h-[60px]" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
                             <input
                                 type="text"
                                 value={newComment}
                                 onChange={(e) => setNewComment(e.target.value)}
                                 placeholder="Write a comment..."
-                                className="flex-1 bg-transparent border-none text-xs sm:text-sm font-medium outline-none"
+                                className="flex-1 bg-transparent border-none text-sm sm:text-base font-medium outline-none"
                                 style={{ color: "var(--text-dark)" }}
                             />
                             <button
                                 type="submit"
                                 disabled={!newComment.trim() || isSubmitting}
-                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs sm:text-sm disabled:opacity-40 px-4 py-1.5 rounded-full shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+                                className="bg-blue-500 hover:bg-blue-600 text-white font-extrabold text-xs sm:text-sm disabled:opacity-40 px-5 py-2 rounded-full shadow-sm transition-all cursor-pointer flex items-center gap-2 min-h-[42px]"
                             >
-                                <Send className="w-3.5 h-3.5" />
+                                <Send className="w-4 h-4" />
                                 <span>Post</span>
                             </button>
                         </form>
