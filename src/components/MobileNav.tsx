@@ -32,9 +32,9 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
 
     const gridItems = [
         { href: "/discover", label: "Discover Hub", icon: Compass, color: "text-amber-500" },
-        { href: "/study", label: "Study Mode", icon: BookOpen, color: "text-purple-400" },
-        { href: "/circles", label: "Student Circles", icon: Users, color: "text-pink-400" },
-        { href: currentUserId ? `/profile/${currentUserId}` : "/profile", label: "My Profile", icon: User, color: "text-blue-400" },
+        { href: "/study", label: "Study Mode", icon: BookOpen, color: "text-purple-500" },
+        { href: "/circles", label: "Student Circles", icon: Users, color: "text-pink-500" },
+        { href: currentUserId ? `/profile/${currentUserId}` : "/profile", label: "My Profile", icon: User, color: "text-blue-500" },
     ];
 
     const handleSignOut = async () => {
@@ -57,7 +57,8 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
                     {onOpenCreatePost && (
                         <button
                             onClick={onOpenCreatePost}
-                            className="p-2.5 rounded-full bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 active:scale-95 transition-all cursor-pointer"
+                            className="p-2.5 rounded-full text-blue-500 hover:bg-blue-500/20 active:scale-95 transition-all cursor-pointer"
+                            style={{ backgroundColor: "var(--primary-bg)" }}
                             aria-label="Create Post"
                         >
                             <PlusSquare className="w-5 h-5" />
@@ -66,7 +67,8 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
 
                     <button
                         onClick={() => setIsNotificationsOpen(true)}
-                        className="p-2.5 rounded-full bg-[var(--card-bg)] border border-[var(--card-border)] text-[var(--text-dark)] hover:opacity-80 active:scale-95 transition-all relative cursor-pointer"
+                        className="p-2.5 rounded-full border hover:opacity-80 active:scale-95 transition-all relative cursor-pointer"
+                        style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)", color: "var(--text-dark)" }}
                         aria-label="Notifications"
                     >
                         <Bell className="w-5 h-5" />
@@ -75,7 +77,8 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
 
                     <Link
                         href="/messages"
-                        className="p-2.5 rounded-full bg-[var(--card-bg)] border border-[var(--card-border)] text-[var(--text-dark)] hover:opacity-80 active:scale-95 transition-all cursor-pointer"
+                        className="p-2.5 rounded-full border hover:opacity-80 active:scale-95 transition-all cursor-pointer"
+                        style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)", color: "var(--text-dark)" }}
                         aria-label="Messages"
                     >
                         <Send className="w-5 h-5" />
@@ -85,7 +88,7 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
 
             {/* 2. Floating Bottom Glass Navigation Bar */}
             <div className="md:hidden fixed bottom-4 left-4 right-4 z-40">
-                <nav className="glass-nav rounded-full px-3 py-2 flex items-center justify-around shadow-2xl border border-[var(--card-border)] backdrop-blur-2xl">
+                <nav className="glass-nav rounded-full px-3 py-2 flex items-center justify-around shadow-2xl border backdrop-blur-2xl" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
                     {navTabs.map((tab) => {
                         const Icon = tab.icon;
                         const isActive = pathname === tab.href;
@@ -95,13 +98,15 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
                                 key={tab.href}
                                 href={tab.href}
                                 className={`relative flex flex-col items-center justify-center py-1.5 px-3 rounded-full transition-all min-w-[54px] min-h-[46px] ${
-                                    isActive ? "text-indigo-500 font-bold" : "text-slate-400 hover:text-[var(--text-dark)]"
+                                    isActive ? "text-blue-500 font-bold" : "hover:text-[var(--text-dark)]"
                                 }`}
+                                style={{ color: isActive ? "var(--primary)" : "var(--text-light)" }}
                             >
                                 {isActive && (
                                     <motion.div
                                         layoutId="activeTabPill"
-                                        className="absolute inset-0 bg-indigo-500/15 rounded-full -z-10"
+                                        className="absolute inset-0 rounded-full -z-10"
+                                        style={{ backgroundColor: "var(--primary-bg)" }}
                                         transition={{ type: "spring", stiffness: 400, damping: 30 }}
                                     />
                                 )}
@@ -114,13 +119,15 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
                     <button
                         onClick={() => setIsMoreOpen(true)}
                         className={`relative flex flex-col items-center justify-center py-1.5 px-3 rounded-full transition-all min-w-[54px] min-h-[46px] cursor-pointer ${
-                            isMoreOpen ? "text-indigo-500 font-bold" : "text-slate-400 hover:text-[var(--text-dark)]"
+                            isMoreOpen ? "text-blue-500 font-bold" : "hover:text-[var(--text-dark)]"
                         }`}
+                        style={{ color: isMoreOpen ? "var(--primary)" : "var(--text-light)" }}
                     >
                         {isMoreOpen && (
                             <motion.div
                                 layoutId="activeTabPill"
-                                className="absolute inset-0 bg-indigo-500/15 rounded-full -z-10"
+                                className="absolute inset-0 rounded-full -z-10"
+                                style={{ backgroundColor: "var(--primary-bg)" }}
                                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
                             />
                         )}
@@ -146,7 +153,7 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setIsMoreOpen(false)}
-                            className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 md:hidden"
+                            className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 md:hidden"
                         />
 
                         <motion.div
@@ -154,17 +161,19 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
                             animate={{ y: 0 }}
                             exit={{ y: "100%" }}
                             transition={{ type: "spring", damping: 26, stiffness: 300 }}
-                            className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-[#121212] border-t border-white/10 rounded-t-[32px] p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+                            className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t rounded-t-[32px] p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+                            style={{ backgroundColor: "var(--background)", borderColor: "var(--card-border)" }}
                         >
                             {/* Drag Handle Bar */}
-                            <div className="w-12 h-1 bg-white/20 rounded-full mx-auto" />
+                            <div className="w-12 h-1 rounded-full mx-auto" style={{ backgroundColor: "var(--text-light)", opacity: 0.3 }} />
 
                             {/* Drawer Header */}
-                            <div className="flex items-center justify-between pb-2 border-b border-white/10">
-                                <h3 className="text-lg font-black tracking-tight text-white">Menu & Options</h3>
+                            <div className="flex items-center justify-between pb-2 border-b" style={{ borderColor: "var(--card-border)" }}>
+                                <h3 className="text-lg font-black tracking-tight" style={{ color: "var(--text-dark)" }}>Menu & Options</h3>
                                 <button
                                     onClick={() => setIsMoreOpen(false)}
-                                    className="p-1.5 rounded-full text-slate-400 hover:text-white transition-all cursor-pointer"
+                                    className="p-1.5 rounded-full transition-all cursor-pointer"
+                                    style={{ color: "var(--text-light)" }}
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
@@ -172,7 +181,7 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
 
                             {/* Primary Action Buttons */}
                             <div className="space-y-3">
-                                {/* Create Study Room (Cyan / Blue Gradient Box) */}
+                                {/* Create Study Room */}
                                 <button
                                     onClick={() => {
                                         setIsMoreOpen(false);
@@ -192,7 +201,7 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
                                     <Sparkles className="w-5 h-5 text-cyan-100 animate-pulse flex-shrink-0" />
                                 </button>
 
-                                {/* Create Post (Pink / Orange Gradient Box) */}
+                                {/* Create Post */}
                                 <button
                                     onClick={() => {
                                         setIsMoreOpen(false);
@@ -221,9 +230,14 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
                                             onClick={() => setIsMoreOpen(false)}
                                             className={`flex items-center gap-3 p-3.5 rounded-2xl border transition-all ${
                                                 isActive
-                                                    ? "bg-blue-500/15 border-blue-500 text-blue-400 font-bold"
-                                                    : "bg-[#1e1e1e] border-white/10 text-white hover:border-white/20"
+                                                    ? "bg-blue-500/15 border-blue-500 text-blue-500 font-bold"
+                                                    : ""
                                             }`}
+                                            style={{
+                                                backgroundColor: isActive ? undefined : "var(--card-bg)",
+                                                borderColor: isActive ? undefined : "var(--card-border)",
+                                                color: isActive ? undefined : "var(--text-dark)",
+                                            }}
                                         >
                                             <Icon className={`w-5 h-5 ${item.color} flex-shrink-0`} />
                                             <span className="text-sm font-bold truncate">{item.label}</span>
@@ -236,9 +250,10 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
                             <Link
                                 href="/settings"
                                 onClick={() => setIsMoreOpen(false)}
-                                className="flex items-center gap-3 p-3.5 rounded-2xl bg-[#1e1e1e] border border-white/10 text-white hover:border-white/20 transition-all"
+                                className="flex items-center gap-3 p-3.5 rounded-2xl border transition-all"
+                                style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)", color: "var(--text-dark)" }}
                             >
-                                <Settings className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                                <Settings className="w-5 h-5 text-emerald-500 flex-shrink-0" />
                                 <span className="text-sm font-bold">Settings</span>
                             </Link>
 
@@ -246,15 +261,16 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
                             <div className="pt-2 grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                                    className="flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-[#1e1e1e] border border-white/10 font-bold text-xs text-white hover:bg-white/5 transition-all cursor-pointer"
+                                    className="flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border font-bold text-xs hover:opacity-80 transition-all cursor-pointer"
+                                    style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)", color: "var(--text-dark)" }}
                                 >
-                                    {theme === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-blue-400" />}
+                                    {theme === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-blue-500" />}
                                     <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
                                 </button>
 
                                 <button
                                     onClick={handleSignOut}
-                                    className="flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold text-xs hover:bg-rose-500/20 transition-all cursor-pointer"
+                                    className="flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20 font-bold text-xs hover:bg-rose-500/20 transition-all cursor-pointer"
                                 >
                                     <LogOut className="w-4 h-4" />
                                     <span>Sign Out</span>
