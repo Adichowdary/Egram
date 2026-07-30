@@ -24,7 +24,7 @@ export function CreateMeetModal({ isOpen, onClose, user, getInitials }: CreateMe
     const handleSubmit = async (e?: React.FormEvent) => {
         e?.preventDefault();
         if (!topic.trim()) {
-            addToast("Please enter a focus topic", "error");
+            addToast("Please enter a study topic", "error");
             return;
         }
 
@@ -47,7 +47,7 @@ export function CreateMeetModal({ isOpen, onClose, user, getInitials }: CreateMe
         setIsSubmitting(false);
 
         if (success) {
-            addToast("🎉 Study room created instantly!", "success");
+            addToast("🎉 Study room created!", "success");
             setTopic("");
             setScheduleTime("");
             setCustomGoogleLink("");
@@ -61,102 +61,113 @@ export function CreateMeetModal({ isOpen, onClose, user, getInitials }: CreateMe
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4"
+                    className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4"
                     onClick={onClose}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                 >
                     <motion.div
-                        className="bg-zinc-900 border-2 border-zinc-800 rounded-[32px] p-5 sm:p-8 w-full max-w-xl shadow-2xl overflow-y-auto relative max-h-[92vh]"
+                        className="glass-card w-full max-w-lg p-6 border border-[var(--card-border)] rounded-3xl shadow-2xl space-y-5 relative max-h-[90vh] overflow-y-auto"
                         onClick={e => e.stopPropagation()}
-                        initial={{ scale: 0.92, y: 20 }}
+                        initial={{ scale: 0.94, y: 20 }}
                         animate={{ scale: 1, y: 0 }}
-                        exit={{ scale: 0.92, y: 20 }}
+                        exit={{ scale: 0.94, y: 20 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
                     >
-                        <div className="flex items-center justify-between mb-6 border-b border-zinc-800 pb-4">
+                        <div className="flex items-center justify-between pb-3 border-b border-[var(--card-border)]">
                             <div className="flex items-center gap-3">
-                                <div className="p-3.5 rounded-2xl bg-blue-500/15 text-blue-400 border border-blue-500/30">
-                                    <Video className="w-7 h-7" />
+                                <div className="p-2.5 rounded-2xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
+                                    <Video className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">Create Study Room</h2>
-                                    <p className="text-xs sm:text-sm text-zinc-400 font-medium">Host live video sessions with your circle</p>
+                                    <h2 className="text-lg font-black text-[var(--text-dark)] tracking-tight">Create Study Room</h2>
+                                    <p className="text-xs text-[var(--text-light)] font-medium">Host live video sessions with your student circle</p>
                                 </div>
                             </div>
-                            <button className="p-2.5 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-800 transition-colors cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center" onClick={onClose}>
-                                <X size={24} />
+                            <button 
+                                className="p-2 rounded-full bg-[var(--accent-bg)] text-[var(--text-light)] hover:text-[var(--text-dark)] transition-all cursor-pointer" 
+                                onClick={onClose}
+                            >
+                                <X size={18} />
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                        <form onSubmit={handleSubmit} className="space-y-4">
                             
-                            {/* Platform Selector Switcher */}
-                            <div className="flex bg-zinc-950 p-1.5 rounded-2xl border border-zinc-800 gap-1.5">
+                            {/* Platform Switcher */}
+                            <div className="flex bg-[var(--accent-bg)] p-1 rounded-2xl border border-[var(--card-border)] gap-1">
                                 <button
                                     type="button"
                                     onClick={() => setMeetPlatform("jitsi")}
-                                    className={`flex-1 py-3.5 px-3 text-xs sm:text-sm font-black rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${meetPlatform === "jitsi" ? "bg-purple-600 text-white shadow-xl scale-[1.02]" : "text-zinc-400 hover:text-white"}`}
+                                    className={`flex-1 py-2.5 px-3 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                        meetPlatform === "jitsi" 
+                                            ? "bg-indigo-500 text-white shadow-md" 
+                                            : "text-[var(--text-light)] hover:text-[var(--text-dark)]"
+                                    }`}
                                 >
-                                    <Sparkles className="w-4 h-4" /> Instant Video
+                                    <Sparkles className="w-3.5 h-3.5" /> Instant Video
                                 </button>
+
                                 <button
                                     type="button"
                                     onClick={() => setMeetPlatform("google")}
-                                    className={`flex-1 py-3.5 px-3 text-xs sm:text-sm font-black rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${meetPlatform === "google" ? "bg-blue-600 text-white shadow-xl scale-[1.02]" : "text-zinc-400 hover:text-white"}`}
+                                    className={`flex-1 py-2.5 px-3 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                        meetPlatform === "google" 
+                                            ? "bg-indigo-500 text-white shadow-md" 
+                                            : "text-[var(--text-light)] hover:text-[var(--text-dark)]"
+                                    }`}
                                 >
-                                    <Video className="w-4 h-4" /> Google Meet
+                                    <Video className="w-3.5 h-3.5" /> Google Meet
                                 </button>
                             </div>
 
-                            <div className="flex flex-col gap-2">
-                                <label className="text-sm sm:text-base font-black text-white ml-1">Focus Topic</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-black text-[var(--text-dark)] uppercase tracking-wider">Study Focus Topic</label>
                                 <input
                                     type="text"
-                                    placeholder="E.g., Algorithms & Data Structures"
+                                    placeholder="E.g., AI & Machine Learning, Data Structures, or Web Dev"
                                     value={topic}
                                     onChange={(e) => setTopic(e.target.value)}
-                                    className="w-full bg-zinc-950 border-2 border-zinc-700/90 focus:border-blue-500 rounded-2xl px-5 py-4 sm:py-4.5 text-base sm:text-lg text-white font-bold focus:outline-none transition-all placeholder:text-zinc-600 shadow-inner"
+                                    className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] focus:border-indigo-500 rounded-2xl px-4 py-3 text-xs sm:text-sm text-[var(--text-dark)] font-bold focus:outline-none transition-all placeholder:text-[var(--text-light)]"
                                     required
                                 />
                             </div>
 
-                            <div className="flex flex-col gap-2">
-                                <label className="text-sm sm:text-base font-black text-white ml-1">Schedule Time (Optional)</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-black text-[var(--text-dark)] uppercase tracking-wider">Schedule Time (Optional)</label>
                                 <input
                                     type="time"
                                     value={scheduleTime}
                                     onChange={(e) => setScheduleTime(e.target.value)}
-                                    className="w-full bg-zinc-950 border-2 border-zinc-700/90 focus:border-blue-500 rounded-2xl px-5 py-4 sm:py-4.5 text-base sm:text-lg text-white font-bold focus:outline-none transition-all shadow-inner cursor-pointer"
+                                    className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] focus:border-indigo-500 rounded-2xl px-4 py-3 text-xs sm:text-sm text-[var(--text-dark)] font-bold focus:outline-none transition-all cursor-pointer"
                                 />
                             </div>
 
                             {meetPlatform === "google" && (
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-sm sm:text-base font-black text-white ml-1">Google Meet URL (Optional)</label>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-black text-[var(--text-dark)] uppercase tracking-wider">Google Meet URL (Optional)</label>
                                     <input
                                         type="url"
                                         placeholder="https://meet.google.com/abc-defg-hij"
                                         value={customGoogleLink}
                                         onChange={(e) => setCustomGoogleLink(e.target.value)}
-                                        className="w-full bg-zinc-950 border-2 border-zinc-700/90 focus:border-blue-500 rounded-2xl px-5 py-4 sm:py-4.5 text-base sm:text-lg text-white font-bold focus:outline-none transition-all placeholder:text-zinc-600 shadow-inner"
+                                        className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] focus:border-indigo-500 rounded-2xl px-4 py-3 text-xs sm:text-sm text-[var(--text-dark)] font-bold focus:outline-none transition-all placeholder:text-[var(--text-light)]"
                                     />
-                                    <span className="text-xs text-zinc-400 ml-1 font-medium">Leave blank to auto-create Google Meet link</span>
                                 </div>
                             )}
 
                             <button
                                 type="submit"
                                 disabled={isSubmitting || !topic.trim()}
-                                className="w-full mt-3 py-4.5 rounded-2xl font-black text-base sm:text-lg text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:brightness-110 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-3 shadow-2xl shadow-blue-600/40 cursor-pointer active:scale-[0.98]"
+                                className="w-full py-3 rounded-2xl font-black text-xs sm:text-sm text-white bg-indigo-500 hover:bg-indigo-600 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 cursor-pointer"
                             >
                                 {isSubmitting ? (
-                                    <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                 ) : (
                                     <>
-                                        <Calendar className="w-5.5 h-5.5" />
-                                        <span>Create & Share Study Room</span>
+                                        <Calendar className="w-4 h-4" />
+                                        <span>Create & Launch Study Room</span>
                                     </>
                                 )}
                             </button>

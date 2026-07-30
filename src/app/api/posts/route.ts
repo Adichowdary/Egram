@@ -10,7 +10,10 @@ export async function GET(req: Request) {
     try {
         const db = await connectMongo();
         if (!db) {
-            return NextResponse.json({ success: true, data: [] }, { status: 200 });
+            return NextResponse.json({ success: true, data: [] }, { 
+                status: 200,
+                headers: { 'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=15' }
+            });
         }
 
         const { searchParams } = new URL(req.url);
@@ -23,25 +26,15 @@ export async function GET(req: Request) {
         if (authorId) {
             query = { author: authorId };
         } else if (type === 'following' && userId) {
-            const followingDocs = await mongoose.model('Follower').find({ followerId: userId }).lean();
+            const followingDocs = await mongoose.model('Follower').find({ followerId: userId }).select('followingId').lean();
             const followingIds = followingDocs.map((doc: any) => doc.followingId);
             query = { author: { $in: followingIds } };
         }
 
-        // Auto-purge legacy test post requested by user
-        await Post.deleteMany({
-            $or: [
-                { content: { $regex: /Senior Tester/i } },
-                { content: { $regex: /Testing Egram for the first time/i } }
-            ]
-        }).catch(() => {});
-
-        const posts = await Post.find({
-            ...query,
-            content: { $not: { $regex: /Senior Tester/i } }
-        })
+        const posts = await Post.find(query)
+            .select('_id author content images likes comments createdAt')
             .sort({ createdAt: -1 })
-            .limit(20)
+            .limit(25)
             .lean();
 
         const authorIds = Array.from(new Set(posts.map((p: any) => p.author)));
@@ -55,7 +48,13 @@ export async function GET(req: Request) {
             author: authorMap.get(post.author) || null,
         }));
 
-        return NextResponse.json({ success: true, data: postsWithAuthors }, { status: 200 });
+        return NextResponse.json(
+            { success: true, data: postsWithAuthors },
+            { 
+                status: 200,
+                headers: { 'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=15' }
+            }
+        );
     } catch (error) {
         console.error('Failed to fetch posts:', error);
         return NextResponse.json({ success: true, data: [] }, { status: 200 });
@@ -79,9 +78,9 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, data: { author: authorId, content: content || "", images: images || [] } }, { status: 201 });
         }
 
-        let user = await User.findOne({ firebaseUid: authorId });
+        let user = await User.findOne({ firebaseUid: authorId }).select('firebaseUid').lean();
         if (!user) {
-            user = await User.create({
+            await User.create({
                 firebaseUid: authorId,
                 email: `${authorId}@egram.student`,
                 name: "Student",

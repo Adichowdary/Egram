@@ -1,11 +1,14 @@
 "use client";
-import { Home, Search, Compass, MessageSquare, PlusSquare, Moon, Sun, User as UserIcon, Bell, Video, BookOpen, Users as UsersIcon, Settings as SettingsIcon } from "lucide-react";
+
+import { Home, Search, Compass, MessageSquare, PlusSquare, Moon, Sun, Bell, Video, BookOpen, Users as UsersIcon, Settings as SettingsIcon } from "lucide-react";
 import { User } from "firebase/auth";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { NotificationsPanel } from "./NotificationsPanel";
 import { useStreak } from "@/hooks/useStreak";
+import { motion } from "framer-motion";
+import { usePathname } from "next/navigation";
 
 interface SidebarProps {
     user: User;
@@ -13,9 +16,6 @@ interface SidebarProps {
     setIsPostModalOpen?: (val: boolean) => void;
     getInitials: (name: string | null) => string;
 }
-
-import { motion } from "framer-motion";
-import { usePathname } from "next/navigation";
 
 const sidebarAvatarCache = new Map<string, string>();
 
@@ -26,10 +26,11 @@ export function Sidebar({ user, setIsModalOpen, setIsPostModalOpen, getInitials 
     const [unreadCount, setUnreadCount] = useState(0);
     const pathname = usePathname();
 
-    // Call streak hook to register login and maintain daily streak
     useStreak(user);
 
-    const [userPhoto, setUserPhoto] = useState<string | null>(() => user?.uid ? sidebarAvatarCache.get(user.uid) || user?.photoURL || null : user?.photoURL || null);
+    const [userPhoto, setUserPhoto] = useState<string | null>(() => 
+        user?.uid ? sidebarAvatarCache.get(user.uid) || user?.photoURL || null : user?.photoURL || null
+    );
 
     const fetchSidebarProfile = async () => {
         if (!user?.uid) return;
@@ -87,77 +88,110 @@ export function Sidebar({ user, setIsModalOpen, setIsPostModalOpen, getInitials 
     }, [user?.uid]);
 
     const navItems = [
-        { href: "/", icon: <Home />, label: "Home" },
-        { href: "/discover", icon: <Compass />, label: "Discover" },
-        { href: "/study", icon: <BookOpen />, label: "Study Mode" },
-        { href: "/circles", icon: <UsersIcon />, label: "Circles" },
-        { href: "/search", icon: <Search />, label: "Search" },
-        { href: "/messages", icon: <MessageSquare />, label: "Messages" },
+        { href: "/", icon: <Home className="w-5 h-5" />, label: "Home" },
+        { href: "/discover", icon: <Compass className="w-5 h-5" />, label: "Discover" },
+        { href: "/study", icon: <BookOpen className="w-5 h-5" />, label: "Study Mode" },
+        { href: "/circles", icon: <UsersIcon className="w-5 h-5" />, label: "Circles" },
+        { href: "/search", icon: <Search className="w-5 h-5" />, label: "Search" },
+        { href: "/messages", icon: <MessageSquare className="w-5 h-5" />, label: "Messages" },
     ];
 
     return (
-        <aside className="sidebar glass">
-            <div className="nav-brand text-[var(--text-dark)] select-none">Egram.</div>
+        <aside className="hidden md:flex sidebar glass border-r border-[var(--card-border)] backdrop-blur-2xl">
+            {/* Branding Header */}
+            <div className="nav-brand flex items-center justify-between px-2 mb-6">
+                <span className="text-2.5xl font-black tracking-tight bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                    Egram.
+                </span>
+            </div>
 
-            <ul className="nav-links">
-                {navItems.map((item) => (
-                    <Link href={item.href} key={item.href}>
-                        <motion.li 
-                            whileHover={{ scale: 1.03, x: 6 }}
-                            whileTap={{ scale: 0.95 }}
-                            transition={{ type: "spring", stiffness: 400, damping: 22 }}
-                            className={pathname === item.href ? "active" : ""}
-                        >
-                            {item.icon} <span>{item.label}</span>
-                        </motion.li>
-                    </Link>
-                ))}
+            {/* Main Navigation Links */}
+            <ul className="nav-links space-y-1">
+                {navItems.map((item) => {
+                    const isActive = pathname === item.href;
 
-                <motion.li 
-                    whileHover={{ scale: 1.03, x: 6 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
-                    onClick={() => { setIsNotificationsOpen(true); setUnreadCount(0); }} 
-                    className="cursor-pointer relative"
+                    return (
+                        <Link href={item.href} key={item.href}>
+                            <motion.li
+                                whileHover={{ scale: 1.02, x: 4 }}
+                                whileTap={{ scale: 0.98 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                                className={`relative flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
+                                    isActive
+                                        ? "text-indigo-500 font-bold bg-indigo-500/10"
+                                        : "text-slate-400 hover:text-[var(--text-dark)] hover:bg-[var(--primary-bg)]"
+                                }`}
+                            >
+                                {isActive && (
+                                    <motion.div
+                                        layoutId="sidebarActivePill"
+                                        className="absolute left-0 top-2 bottom-2 w-1 bg-indigo-500 rounded-r-full"
+                                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                    />
+                                )}
+                                {item.icon}
+                                <span>{item.label}</span>
+                            </motion.li>
+                        </Link>
+                    );
+                })}
+
+                {/* Notifications trigger */}
+                <motion.li
+                    whileHover={{ scale: 1.02, x: 4 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    onClick={() => { setIsNotificationsOpen(true); setUnreadCount(0); }}
+                    className="cursor-pointer relative flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold text-slate-400 hover:text-[var(--text-dark)] hover:bg-[var(--primary-bg)] transition-all"
                 >
-                    <Bell /> <span>Notifications</span>
+                    <Bell className="w-5 h-5" />
+                    <span>Notifications</span>
                     {unreadCount > 0 && (
-                        <div className="absolute top-2 left-6 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white border-2 border-[var(--card-bg)] animate-pulse">
+                        <div className="ml-auto px-2 py-0.5 bg-rose-500 rounded-full text-[10px] font-black text-white border-2 border-[var(--card-bg)] animate-pulse">
                             {unreadCount}
                         </div>
                     )}
                 </motion.li>
 
-                <motion.li 
-                    whileHover={{ scale: 1.03, x: 6 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
-                    onClick={() => setIsPostModalOpen?.(true)} 
-                    className="cursor-pointer"
+                {/* Create Post trigger */}
+                <motion.li
+                    whileHover={{ scale: 1.02, x: 4 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    onClick={() => setIsPostModalOpen?.(true)}
+                    className="cursor-pointer flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold text-slate-400 hover:text-[var(--text-dark)] hover:bg-[var(--primary-bg)] transition-all"
                 >
-                    <PlusSquare /> <span>Create Post</span>
-                </motion.li>
-                
-                <motion.li 
-                    whileHover={{ scale: 1.03, x: 6 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
-                    onClick={() => setIsModalOpen(true)} 
-                    className="cursor-pointer"
-                >
-                    <Video /> <span>Create Meet</span>
+                    <PlusSquare className="w-5 h-5 text-indigo-500" />
+                    <span>Create Post</span>
                 </motion.li>
 
+                {/* Create Meet trigger */}
+                <motion.li
+                    whileHover={{ scale: 1.02, x: 4 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    onClick={() => setIsModalOpen(true)}
+                    className="cursor-pointer flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold text-slate-400 hover:text-[var(--text-dark)] hover:bg-[var(--primary-bg)] transition-all"
+                >
+                    <Video className="w-5 h-5 text-pink-500" />
+                    <span>Create Meet</span>
+                </motion.li>
+
+                {/* User Profile */}
                 <Link href={`/profile/${user.uid}`}>
-                    <motion.li 
-                        whileHover={{ scale: 1.03, x: 6 }}
-                        whileTap={{ scale: 0.95 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 22 }}
-                        className={pathname.includes(`/profile/${user.uid}`) ? "active" : ""}
+                    <motion.li
+                        whileHover={{ scale: 1.02, x: 4 }}
+                        whileTap={{ scale: 0.98 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                        className={`cursor-pointer flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
+                            pathname.includes(`/profile/${user.uid}`)
+                                ? "text-indigo-500 font-bold bg-indigo-500/10"
+                                : "text-slate-400 hover:text-[var(--text-dark)] hover:bg-[var(--primary-bg)]"
+                        }`}
                     >
-                        <div className="avatar-small transition-transform duration-300 hover:scale-110">
+                        <div className="w-6 h-6 rounded-full overflow-hidden border border-indigo-500/30 flex items-center justify-center bg-indigo-500/10 text-[10px] font-black text-indigo-500">
                             {userPhoto || user.photoURL ? (
-                                <img src={userPhoto || user.photoURL || ""} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                                <img src={userPhoto || user.photoURL || ""} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
                                 getInitials(user.displayName || user.email)
                             )}
@@ -166,26 +200,34 @@ export function Sidebar({ user, setIsModalOpen, setIsPostModalOpen, getInitials 
                     </motion.li>
                 </Link>
 
+                {/* Settings */}
                 <Link href="/settings">
-                    <motion.li 
-                        whileHover={{ scale: 1.03, x: 6 }}
-                        whileTap={{ scale: 0.95 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 22 }}
-                        className={pathname === "/settings" ? "active" : ""}
+                    <motion.li
+                        whileHover={{ scale: 1.02, x: 4 }}
+                        whileTap={{ scale: 0.98 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                        className={`cursor-pointer flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
+                            pathname === "/settings"
+                                ? "text-indigo-500 font-bold bg-indigo-500/10"
+                                : "text-slate-400 hover:text-[var(--text-dark)] hover:bg-[var(--primary-bg)]"
+                        }`}
                     >
-                        <SettingsIcon /> <span>Settings</span>
+                        <SettingsIcon className="w-5 h-5" />
+                        <span>Settings</span>
                     </motion.li>
                 </Link>
             </ul>
 
+            {/* Theme Toggle Button */}
             <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="icon-btn mt-auto flex items-center gap-4 p-4 text-left w-full hover:bg-[var(--card-border)] rounded-lg transition-colors"
+                className="mt-auto flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] text-sm font-semibold text-[var(--text-dark)] hover:border-indigo-500/30 transition-all cursor-pointer shadow-sm"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 aria-label="Toggle theme"
             >
-                {mounted && theme === "dark" ? <Sun /> : <Moon />} <span>Theme</span>
+                {mounted && theme === "dark" ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-indigo-400" />}
+                <span>{mounted && theme === "dark" ? "Light Theme" : "Dark Theme"}</span>
             </motion.button>
 
             <NotificationsPanel

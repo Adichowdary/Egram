@@ -1,31 +1,28 @@
 import { useState, useEffect } from "react";
 import { User } from "firebase/auth";
 import { PostFeed } from "./PostFeed";
-import { collection, query, where, onSnapshot, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { StoriesBar } from "./StoriesBar";
+import { Flame, Compass, Users, Image as ImageIcon, Video, Sparkles, TrendingUp } from "lucide-react";
+import { CreatePostModal } from "./CreatePostModal";
+import { CreateMeetModal } from "./CreateMeetModal";
 
 interface CenterFeedProps {
     user: User;
 }
-
-interface OnlineUser {
-    uid: string;
-    displayName: string;
-    photoURL: string;
-    currentStreak: number;
-    isOnline: boolean;
-    lastActive: any;
-}
-
-import { StoriesBar } from "./StoriesBar";
 
 export function CenterFeed({ user }: CenterFeedProps) {
     const [feedType, setFeedType] = useState<"global" | "following">("global");
     const [streakLeaderboard, setStreakLeaderboard] = useState<any[]>([]);
     const [onlineUids, setOnlineUids] = useState<Set<string>>(new Set());
     const [loadingStreak, setLoadingStreak] = useState(true);
+    const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+    const [isMeetModalOpen, setIsMeetModalOpen] = useState(false);
+
+    const trendingTags = ["#MachineLearning", "#WebDev", "#SystemDesign", "#Calculus", "#CyberSecurity"];
 
     const fetchGlobalStreakLeaderboard = async () => {
         try {
@@ -34,7 +31,6 @@ export function CenterFeed({ user }: CenterFeedProps) {
                 const data = await res.json();
                 const users = data.data || [];
                 
-                // Sort by highest streak descending
                 users.sort((a: any, b: any) => {
                     const strA = a.currentStreak || a.streak || 0;
                     const strB = b.currentStreak || b.streak || 0;
@@ -53,7 +49,6 @@ export function CenterFeed({ user }: CenterFeedProps) {
     useEffect(() => {
         fetchGlobalStreakLeaderboard();
 
-        // Firestore online presence listener
         const usersQuery = query(collection(db, "users"), where("isOnline", "==", true));
         const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
             const onlineSet = new Set<string>();
@@ -76,128 +71,196 @@ export function CenterFeed({ user }: CenterFeedProps) {
     };
 
     return (
-        <div className="feed-column">
-            {/* Egram 2.0 24h Stories Bar */}
-            <div className="mb-4">
-                <StoriesBar currentUser={user} getInitials={getInitials} />
-            </div>
+        <div className="feed-column space-y-6">
+            {/* 1. 24h Stories Bar Widget */}
+            <StoriesBar currentUser={user} getInitials={getInitials} />
 
-            {/* Global Streak Leaderboard Bar */}
-            <div className="glass rounded-3xl p-4 sm:p-5 mb-6 border border-zinc-800/90 bg-zinc-950/80 shadow-2xl relative overflow-hidden">
-                <div className="flex items-center justify-between mb-3 px-1">
-                    <div className="flex items-center gap-2">
-                        <span className="text-base sm:text-lg">🔥</span>
-                        <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white">Global Streak Leaderboard</h3>
+            {/* 2. Quick Post Composer Widget */}
+            <div className="bg-[#1e1e1e] p-4 sm:p-5 border border-[rgba(255,255,255,0.08)] rounded-2xl shadow-lg space-y-4">
+                <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden border border-blue-500/40 p-0.5 flex-shrink-0">
+                        {user.photoURL ? (
+                            <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover rounded-full" />
+                        ) : (
+                            <div className="w-full h-full bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center font-bold text-sm">
+                                {getInitials(user.displayName || user.email)}
+                            </div>
+                        )}
                     </div>
-                    <span className="text-[10px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-full">Top Users</span>
+
+                    <button
+                        onClick={() => setIsPostModalOpen(true)}
+                        className="flex-1 bg-[#242424] hover:bg-[#2a2a2a] border border-[rgba(255,255,255,0.08)] text-left px-4 py-3 rounded-full text-xs sm:text-sm font-medium text-[#a0a0a0] hover:text-white transition-all cursor-pointer truncate"
+                    >
+                        Share a study update, code snippet, or thought...
+                    </button>
                 </div>
 
-                <div className="overflow-x-auto no-scrollbar py-2">
-                    <div className="flex items-center gap-5 min-w-max px-1">
+                <div className="grid grid-cols-3 gap-2 pt-3 border-t border-[rgba(255,255,255,0.08)] text-xs font-bold text-[#a0a0a0]">
+                    <button
+                        onClick={() => setIsPostModalOpen(true)}
+                        className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[#242424] border border-[rgba(255,255,255,0.08)] hover:bg-emerald-500/10 hover:text-emerald-400 transition-all cursor-pointer truncate"
+                    >
+                        <ImageIcon className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                        <span className="truncate">Add Media</span>
+                    </button>
+
+                    <button
+                        onClick={() => setIsMeetModalOpen(true)}
+                        className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[#242424] border border-[rgba(255,255,255,0.08)] hover:bg-blue-500/10 hover:text-blue-400 transition-all cursor-pointer truncate"
+                    >
+                        <Video className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                        <span className="truncate">Study Room</span>
+                    </button>
+
+                    <button
+                        onClick={() => setIsPostModalOpen(true)}
+                        className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[#3b82f6] text-white hover:bg-blue-600 shadow-md transition-all cursor-pointer truncate"
+                    >
+                        <Sparkles className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">Publish</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* 3. Global Streak Leaderboard Widget - Clean Aligned Streak Badges */}
+            <div className="bg-[#1e1e1e] p-4 sm:p-5 border border-[rgba(255,255,255,0.08)] rounded-2xl shadow-lg space-y-3">
+                <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-2">
+                        <Flame className="w-5 h-5 text-amber-400 fill-amber-400 animate-pulse flex-shrink-0" />
+                        <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-white">Global Streak Hall of Fame</h3>
+                    </div>
+                    <span className="text-[10px] sm:text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full flex-shrink-0">
+                        Top Streaks
+                    </span>
+                </div>
+
+                <div className="overflow-x-auto no-scrollbar py-1">
+                    <div className="flex items-center gap-3 min-w-max px-1">
                         {loadingStreak ? (
                             [1, 2, 3, 4, 5].map(i => (
-                                <div key={i} className="w-16 h-16 rounded-full bg-zinc-800 animate-pulse border-2 border-zinc-700" />
+                                <div key={i} className="w-16 h-20 rounded-xl bg-[#242424] skeleton-shimmer" />
                             ))
                         ) : streakLeaderboard.length > 0 ? (
-                            streakLeaderboard.map((item, index) => {
+                            streakLeaderboard.slice(0, 10).map((item, index) => {
                                 const rank = index + 1;
                                 const isSelf = item.firebaseUid === user.uid;
                                 const isOnline = onlineUids.has(item.firebaseUid);
                                 const streakVal = item.currentStreak || item.streak || 0;
 
-                                let borderGradient = "bg-gradient-to-tr from-cyan-400 to-blue-500";
-                                let crownBadge = null;
+                                let borderGradient = "border-blue-500/40";
+                                let rankTag = null;
 
                                 if (rank === 1) {
-                                    borderGradient = "bg-gradient-to-tr from-amber-300 via-yellow-400 to-amber-600 shadow-amber-500/50";
-                                    crownBadge = "👑 #1";
+                                    borderGradient = "border-amber-400 shadow-amber-500/20";
+                                    rankTag = "👑 #1";
                                 } else if (rank === 2) {
-                                    borderGradient = "bg-gradient-to-tr from-slate-200 via-slate-400 to-zinc-400 shadow-slate-400/40";
-                                    crownBadge = "🥈 #2";
+                                    borderGradient = "border-slate-400";
+                                    rankTag = "🥈 #2";
                                 } else if (rank === 3) {
-                                    borderGradient = "bg-gradient-to-tr from-amber-700 via-orange-600 to-amber-800 shadow-amber-700/40";
-                                    crownBadge = "🥉 #3";
+                                    borderGradient = "border-amber-600";
+                                    rankTag = "🥉 #3";
                                 }
 
                                 return (
-                                    <Link key={item.firebaseUid || index} href={`/profile/${item.firebaseUid}`} className="relative group flex flex-col items-center gap-1.5">
-                                        
-                                        {/* Rank Crown Badge */}
-                                        {crownBadge && (
-                                            <div className="absolute -top-3.5 z-30 bg-zinc-950 border border-amber-500/60 px-2 py-0.5 rounded-full text-[9px] font-black text-amber-400 shadow-lg">
-                                                {crownBadge}
-                                            </div>
-                                        )}
-
-                                        {/* Ring and Avatar Wrapper */}
+                                    <Link key={item.firebaseUid || index} href={`/profile/${item.firebaseUid}`} className="relative group flex flex-col items-center gap-1.5 w-18">
                                         <div className="relative">
-                                            <div className={`w-16 h-16 rounded-full p-[2px] transition-all duration-300 group-hover:scale-105 shadow-xl ${borderGradient}`}>
-                                                <div className="w-full h-full rounded-full bg-zinc-950 p-[2px]">
-                                                    <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-zinc-900">
-                                                        {item.avatarUrl ? (
-                                                            <img src={item.avatarUrl} alt={item.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                                                        ) : (
-                                                            <span className="text-lg font-black text-blue-400">{getInitials(item.name)}</span>
-                                                        )}
-                                                    </div>
+                                            <div className={`w-13 h-13 rounded-full border-2 p-0.5 transition-all group-hover:scale-105 shadow-sm ${borderGradient}`}>
+                                                <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-[#242424] text-blue-400 font-bold text-xs">
+                                                    {item.avatarUrl ? (
+                                                        <img src={item.avatarUrl} alt={item.name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <span>{getInitials(item.name)}</span>
+                                                    )}
                                                 </div>
                                             </div>
-                                            
-                                            {/* Online indicator */}
-                                            {isOnline && (
-                                                <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-green-500 border-[3px] border-zinc-950 rounded-full z-20 shadow-md" />
-                                            )}
 
-                                            {/* Streak Badge */}
-                                            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-zinc-950 border border-zinc-700 px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-lg z-20">
-                                                <span className="text-[10px] font-black text-white">{streakVal}</span>
-                                                <span className="text-[10px]">{streakVal > 10 ? '🔥' : '❄️'}</span>
-                                            </div>
+                                            {isOnline && (
+                                                <div className="absolute top-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#1e1e1e] rounded-full z-20" />
+                                            )}
+                                        </div>
+
+                                        {/* Clean Streak Badge below avatar */}
+                                        <div className="px-2 py-0.5 rounded-full bg-[#242424] border border-amber-500/30 text-[10px] font-bold text-amber-400 shadow-sm flex items-center gap-0.5">
+                                            <span>{streakVal}d</span>
+                                            {rankTag && <span className="ml-0.5">{rankTag}</span>}
                                         </div>
                                         
-                                        <span className="text-[10px] font-bold text-zinc-300 max-w-[68px] truncate transition-colors group-hover:text-white mt-1">
+                                        <span className="text-[11px] font-medium text-[#a0a0a0] group-hover:text-white w-full text-center truncate px-0.5">
                                             {isSelf ? 'You' : (item.name || 'User')}
                                         </span>
                                     </Link>
                                 );
                             })
                         ) : (
-                            <div className="flex items-center gap-3 px-4 py-2 bg-zinc-900/60 rounded-2xl border border-zinc-800">
-                                <span className="text-xs font-bold text-zinc-400">No active streak records yet</span>
+                            <div className="flex items-center gap-2 px-3 py-2 bg-[#242424] rounded-xl text-xs text-[#a0a0a0]">
+                                <span>No active streak records yet</span>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
 
-            <div className="flex gap-4 mb-6 px-1 border-b border-zinc-800/30">
-                <button
-                    onClick={() => setFeedType("global")}
-                    className={`relative pb-3 px-4 transition-colors ${feedType === "global" ? "text-white font-bold" : "text-zinc-500 hover:text-zinc-300"}`}
-                >
-                    Explore
-                    {feedType === "global" && (
-                        <motion.div 
-                            layoutId="activeTab" 
-                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary)] shadow-[0_0_10px_rgba(0,149,246,0.5)]" 
-                        />
-                    )}
-                </button>
-                <button
-                    onClick={() => setFeedType("following")}
-                    className={`relative pb-3 px-4 transition-colors ${feedType === "following" ? "text-white font-bold" : "text-zinc-500 hover:text-zinc-300"}`}
-                >
-                    Following
-                    {feedType === "following" && (
-                        <motion.div 
-                            layoutId="activeTab" 
-                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary)] shadow-[0_0_10px_rgba(0,149,246,0.5)]" 
-                        />
-                    )}
-                </button>
+            {/* 4. Trending Topics Bar Widget */}
+            <div className="bg-[#1e1e1e] p-3.5 border border-[rgba(255,255,255,0.08)] rounded-xl flex items-center justify-between gap-3 overflow-x-auto no-scrollbar">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    <TrendingUp className="w-4 h-4 text-blue-400" />
+                    <span className="text-xs font-bold uppercase text-[#a0a0a0]">Trending Topics:</span>
+                </div>
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                    {trendingTags.map((tag) => (
+                        <Link key={tag} href={`/search?q=${encodeURIComponent(tag.replace('#', ''))}`} className="px-2.5 py-1 rounded-lg bg-[#242424] border border-[rgba(255,255,255,0.08)] text-xs font-bold text-blue-400 hover:bg-blue-500/10 transition-all flex-shrink-0">
+                            {tag}
+                        </Link>
+                    ))}
+                </div>
             </div>
 
+            {/* 5. Compact Feed Switcher Widget - Inline-flex Pill Slider */}
+            <div className="flex justify-center my-2">
+                <div className="inline-flex items-center gap-1.5 p-1 bg-[#1e1e1e] border border-[rgba(255,255,255,0.08)] rounded-full shadow-md">
+                    <button
+                        onClick={() => setFeedType("global")}
+                        className={`py-2 px-5 rounded-full text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                            feedType === "global"
+                                ? "bg-[#3b82f6] text-white shadow-sm"
+                                : "text-[#a0a0a0] hover:text-white"
+                        }`}
+                    >
+                        <Compass className="w-3.5 h-3.5" />
+                        <span>Explore Feed</span>
+                    </button>
+
+                    <button
+                        onClick={() => setFeedType("following")}
+                        className={`py-2 px-5 rounded-full text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                            feedType === "following"
+                                ? "bg-[#3b82f6] text-white shadow-sm"
+                                : "text-[#a0a0a0] hover:text-white"
+                        }`}
+                    >
+                        <Users className="w-3.5 h-3.5" />
+                        <span>Following</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* 6. Post Feed */}
             <PostFeed user={user} feedType={feedType} />
+
+            {/* Modals */}
+            <CreatePostModal
+                isOpen={isPostModalOpen}
+                onClose={() => setIsPostModalOpen(false)}
+                user={user}
+            />
+
+            <CreateMeetModal
+                isOpen={isMeetModalOpen}
+                onClose={() => setIsMeetModalOpen(false)}
+                user={user}
+                getInitials={getInitials}
+            />
         </div>
     );
 }

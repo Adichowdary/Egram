@@ -13,7 +13,6 @@ import { Search as SearchIcon, Users, Loader2, Sparkles, TrendingUp } from "luci
 import { useToast } from "@/components/ToastProvider";
 import { motion, AnimatePresence } from "framer-motion";
 import { SplashScreen } from "@/components/SplashScreen";
-
 import { useRouter } from "next/navigation";
 
 export default function SearchPage() {
@@ -106,7 +105,6 @@ export default function SearchPage() {
 
         const isCurrentlyFollowing = followingIds.has(targetUserId);
 
-        // Optimistic update
         setFollowingIds(prev => {
             const next = new Set(prev);
             if (isCurrentlyFollowing) {
@@ -138,7 +136,6 @@ export default function SearchPage() {
                 throw new Error("Failed to update follow status");
             }
         } catch {
-            // Revert on error
             setFollowingIds(prev => {
                 const next = new Set(prev);
                 if (isCurrentlyFollowing) {
@@ -166,7 +163,7 @@ export default function SearchPage() {
             </AnimatePresence>
 
             {!loading && user && (
-                <div className="min-h-screen" style={{ background: "var(--background)" }}>
+                <div className="min-h-screen bg-[var(--background)] text-[var(--text-dark)] pb-24 md:pb-8">
                     <Sidebar
                         user={user}
                         setIsModalOpen={setIsModalOpen}
@@ -175,46 +172,39 @@ export default function SearchPage() {
                     />
 
                     <main className="main-content">
-                        <div className="feed-column">
+                        <div className="feed-column space-y-6">
 
-                            {/* === Header === */}
+                            {/* Header */}
                             <motion.div
-                                initial={{ opacity: 0, y: -12 }}
+                                initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="mb-10"
                             >
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="p-2 rounded-2xl" style={{ background: "var(--primary-bg)" }}>
-                                        <Sparkles className="w-5 h-5" style={{ color: "var(--primary)" }} />
+                                <div className="flex items-center gap-3">
+                                    <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
+                                        <Sparkles className="w-6 h-6" />
                                     </div>
-                                    <h1 className="text-4xl font-black tracking-tight" style={{ color: "var(--text-dark)" }}>
-                                        Discover
-                                    </h1>
+                                    <div>
+                                        <h1 className="text-2xl font-black tracking-tight">Discover Students & Creators</h1>
+                                        <p className="text-xs text-[var(--text-light)] font-medium">
+                                            Search learners, connect with study buddies, and follow learning journeys
+                                        </p>
+                                    </div>
                                 </div>
-                                <p className="text-sm font-medium pl-1" style={{ color: "var(--text-light)" }}>
-                                    Find learners, follow their journeys, and grow together.
-                                </p>
                             </motion.div>
 
-                            {/* === Search Bar === */}
+                            {/* Search Form Bar */}
                             <motion.div
-                                initial={{ opacity: 0, y: 8 }}
+                                initial={{ opacity: 0, y: 6 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.08 }}
-                                className="mb-10"
                             >
                                 <form
                                     onSubmit={handleSearch}
-                                    className="relative flex items-center rounded-2xl transition-all duration-200"
-                                    style={{
-                                        background: "var(--card-bg)",
-                                        border: `2px solid ${isFocused ? "var(--primary)" : "var(--card-border)"}`,
-                                        boxShadow: isFocused ? "0 0 0 4px var(--primary-bg)" : "none",
-                                    }}
+                                    className="relative flex items-center rounded-2xl transition-all"
                                 >
                                     <SearchIcon
-                                        className="absolute left-4.5 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none transition-colors z-10"
-                                        style={{ color: isFocused ? "var(--primary)" : "var(--text-light)" }}
+                                        className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none transition-colors z-10 ${
+                                            isFocused ? "text-indigo-500" : "text-[var(--text-light)]"
+                                        }`}
                                     />
                                     <input
                                         type="text"
@@ -222,49 +212,35 @@ export default function SearchPage() {
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         onFocus={() => setIsFocused(true)}
                                         onBlur={() => setIsFocused(false)}
-                                        placeholder="Search learners by name or email..."
-                                        style={{
-                                            color: "var(--text-dark)",
-                                            background: "transparent",
-                                        }}
-                                        className="w-full rounded-2xl py-3.5 pl-12 pr-20 text-xs sm:text-sm font-medium outline-none transition-all placeholder:text-[var(--text-light)] placeholder:opacity-60 placeholder:font-normal truncate"
+                                        placeholder=""
+                                        className="w-full bg-[var(--card-bg)] border border-[var(--card-border)] focus:border-indigo-500 rounded-2xl py-3.5 pl-11 pr-20 text-xs sm:text-sm text-[var(--text-dark)] placeholder:text-[var(--text-light)] outline-none transition-all shadow-xs"
                                     />
                                     {isSearching ? (
                                         <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10">
-                                            <Loader2 className="animate-spin w-4 h-4" style={{ color: "var(--primary)" }} />
+                                            <Loader2 className="animate-spin w-4 h-4 text-indigo-500" />
                                         </div>
                                     ) : hasQuery ? (
                                         <button
                                             type="submit"
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold px-3 py-1.5 rounded-xl transition-all z-10"
-                                            style={{ background: "var(--primary)", color: "#fff" }}
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-black px-3.5 py-1.5 rounded-xl bg-indigo-500 text-white hover:bg-indigo-600 transition-all z-10 cursor-pointer shadow-sm"
                                         >
                                             Search
                                         </button>
                                     ) : null}
                                 </form>
-
-                                {/* Keyboard hint */}
-                                <p className="text-center text-[10px] sm:text-xs mt-6 font-bold tracking-wider uppercase select-none opacity-40" style={{ color: "var(--text-main)" }}>
-                                    Press <kbd className="px-1.5 py-0.5 rounded border-b-2 font-black mx-1 shadow-sm" style={{ background: "var(--accent-bg)", borderColor: "var(--card-border)", color: "var(--text-dark)" }}>Enter</kbd> to search
-                                </p>
                             </motion.div>
 
-                            {/* === Results Section === */}
+                            {/* Results Section */}
                             <div className="space-y-3">
-                                {/* Section label */}
-                                <div className="flex items-center justify-between px-1 mb-5">
+                                <div className="flex items-center justify-between px-1 mb-2">
                                     <div className="flex items-center gap-2">
-                                        <TrendingUp className="w-4 h-4" style={{ color: "var(--text-light)" }} />
-                                        <span className="text-xs font-black uppercase tracking-widest" style={{ color: "var(--text-light)" }}>
-                                            {searchResults.length > 0 ? "Results" : "Discover People"}
+                                        <TrendingUp className="w-4 h-4 text-[var(--text-light)]" />
+                                        <span className="text-xs font-black uppercase tracking-wider text-[var(--text-light)]">
+                                            {searchResults.length > 0 ? "Search Results" : "Suggested Learners"}
                                         </span>
                                     </div>
                                     {searchResults.length > 0 && (
-                                        <span
-                                            className="text-[11px] font-bold px-3 py-1 rounded-full"
-                                            style={{ background: "var(--primary-bg)", color: "var(--primary)" }}
-                                        >
+                                        <span className="text-[10px] font-black text-indigo-500 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-0.5 rounded-full">
                                             {searchResults.length} found
                                         </span>
                                     )}
@@ -297,67 +273,32 @@ export default function SearchPage() {
                                     ) : hasQuery && !isSearching ? (
                                         <motion.div
                                             key="no-results"
-                                            initial={{ opacity: 0, scale: 0.97 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            className="text-center py-16 rounded-3xl border-2 border-dashed"
-                                            style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}
-                                        >
-                                            <div
-                                                className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-5"
-                                                style={{ background: "var(--accent-bg)" }}
-                                            >
-                                                <Users className="w-8 h-8" style={{ color: "var(--text-light)" }} />
-                                            </div>
-                                            <p className="text-base font-bold mb-1" style={{ color: "var(--text-dark)" }}>
-                                                No learners found
-                                            </p>
-                                            <p className="text-sm px-10 leading-relaxed" style={{ color: "var(--text-light)" }}>
-                                                No result for &ldquo;{searchQuery}&rdquo;. Try a different name!
-                                            </p>
-                                        </motion.div>
-                                    ) : (
-                                        <motion.div
-                                            key="empty"
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            className="text-center py-20 rounded-[32px] relative overflow-hidden group border-2"
-                                            style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}
+                                            className="glass-card p-8 text-center border border-dashed border-[var(--card-border)] rounded-3xl space-y-2"
                                         >
-                                            {/* Glow on hover */}
-                                            <div
-                                                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
-                                                style={{ background: "linear-gradient(to bottom, var(--primary-bg), transparent)" }}
-                                            />
-                                            <div
-                                                className="w-20 h-20 rounded-[28px] flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-500"
-                                                style={{ background: "var(--accent-bg)" }}
-                                            >
-                                                <Users className="w-10 h-10" style={{ color: "var(--text-light)", opacity: 0.3 }} />
-                                            </div>
-                                            <p className="text-lg font-black mb-2" style={{ color: "var(--text-dark)" }}>
-                                                Expand your circle
-                                            </p>
-                                            <p className="text-sm max-w-[280px] mx-auto leading-relaxed font-medium" style={{ color: "var(--text-light)" }}>
-                                                Find fellow students, follow their progress, and keep those
-                                                streaks alive together! 🔥
-                                            </p>
+                                            <Users className="w-8 h-8 text-indigo-500 mx-auto opacity-60" />
+                                            <p className="text-sm font-black text-[var(--text-dark)]">No learners found matching "{searchQuery}"</p>
+                                            <p className="text-xs text-[var(--text-light)]">Try searching for another student's name or username!</p>
                                         </motion.div>
-                                    )}
+                                    ) : null}
                                 </AnimatePresence>
                             </div>
 
                         </div>
-                        
+
                         <RightSidebar
                             user={user}
-                            handleSignOut={() => auth.signOut()}
+                            handleSignOut={() => auth.signOut().then(() => router.push("/login"))}
                             getInitials={getInitials}
                         />
                     </main>
 
-                    <MobileNav onOpenCreatePost={() => setIsPostModalOpen(true)} onOpenCreateMeet={() => setIsModalOpen(true)} currentUserId={user.uid} />
+                    <MobileNav
+                        onOpenCreatePost={() => setIsPostModalOpen(true)}
+                        onOpenCreateMeet={() => setIsModalOpen(true)}
+                        currentUserId={user.uid}
+                    />
 
                     <CreateMeetModal
                         isOpen={isModalOpen}

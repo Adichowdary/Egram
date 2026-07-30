@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import connectMongo from '@/lib/mongodb';
 import Story from '@/models/Story';
 
-// In-memory fallback cache so stories work even if DB connection is offline/unconfigured
 const inMemoryStories: Array<{
     id: string;
     userId: string;
@@ -21,10 +20,13 @@ export async function GET() {
         let rawStories: any[] = [];
 
         if (conn) {
-            rawStories = await Story.find({ expiresAt: { $gt: now } }).sort({ createdAt: -1 }).lean();
+            rawStories = await Story.find({ expiresAt: { $gt: now } })
+                .select('_id userId userName userAvatar mediaUrl mediaType caption views likes createdAt expiresAt')
+                .sort({ createdAt: -1 })
+                .limit(40)
+                .lean();
         }
 
-        // Combine DB stories and active in-memory fallback stories
         const combined = [...rawStories, ...inMemoryStories.filter(s => new Date(s.expiresAt) > now)];
         const userIds = Array.from(new Set(combined.map(s => s.userId)));
 
@@ -41,7 +43,6 @@ export async function GET() {
             }
         }
 
-        // Group stories by userId for Instagram-style story bubbles
         const userStoryMap = new Map<string, any>();
 
         for (const story of combined) {
@@ -75,7 +76,12 @@ export async function GET() {
         }
 
         const result = Array.from(userStoryMap.values());
-        return NextResponse.json({ stories: result });
+        return NextResponse.json(
+            { stories: result },
+            {
+                headers: { 'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=15' }
+            }
+        );
     } catch (error: any) {
         console.error("Error fetching stories:", error);
         return NextResponse.json({ stories: [] });

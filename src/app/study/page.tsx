@@ -12,16 +12,8 @@ import { CreateStoryModal } from "@/components/CreateStoryModal";
 import { SplashScreen } from "@/components/SplashScreen";
 import { useToast } from "@/components/ToastProvider";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, RotateCcw, Flame, Trophy, Clock, CheckCircle2, BookOpen, Sparkles, Target } from "lucide-react";
+import { Play, Pause, RotateCcw, Flame, Clock, BookOpen, Sparkles, Target, Award } from "lucide-react";
 import { useRouter } from "next/navigation";
-
-interface LeaderboardUser {
-    rank: number;
-    name: string;
-    college: string;
-    hours: string;
-    streak: number;
-}
 
 export default function StudyPage() {
     const [user, setUser] = useState<any>(() => typeof window !== "undefined" && auth ? auth.currentUser : null);
@@ -32,14 +24,12 @@ export default function StudyPage() {
 
     // Pomodoro Timer State
     const [mode, setMode] = useState<"focus" | "break">("focus");
-    const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes default
+    const [timeLeft, setTimeLeft] = useState(25 * 60);
     const [isRunning, setIsRunning] = useState(false);
     const [completedSessions, setCompletedSessions] = useState(0);
     const [todayMinutes, setTodayMinutes] = useState(0);
-    const [weeklyMinutes, setWeeklyMinutes] = useState(0);
     const [currentStreak, setCurrentStreak] = useState(0);
-    const [topic, setTopic] = useState("General Study Focus");
-    const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
+    const [topic, setTopic] = useState("Algorithms & System Design");
 
     const router = useRouter();
     const { addToast } = useToast();
@@ -49,7 +39,6 @@ export default function StudyPage() {
             if (currentUser) {
                 setUser(currentUser);
                 try {
-                    // Fetch real user streak & study stats from database
                     const res = await fetch(`/api/users/${currentUser.uid}`);
                     if (res.ok) {
                         const data = await res.json();
@@ -67,7 +56,6 @@ export default function StudyPage() {
         return () => unsubscribeAuth();
     }, [router]);
 
-    // Timer countdown effect
     useEffect(() => {
         let interval: any = null;
         if (isRunning && timeLeft > 0) {
@@ -79,7 +67,6 @@ export default function StudyPage() {
             if (mode === "focus") {
                 setCompletedSessions((prev) => prev + 1);
                 setTodayMinutes((prev) => prev + 25);
-                setWeeklyMinutes((prev) => prev + 25);
                 addToast("🎉 Focus session completed! Take a 5-minute break.", "success");
                 setMode("break");
                 setTimeLeft(5 * 60);
@@ -128,18 +115,18 @@ export default function StudyPage() {
                     />
 
                     <main className="main-content">
-                        <div className="feed-column">
+                        <div className="feed-column space-y-6">
                             
-                            {/* Page Header */}
+                            {/* Page Title */}
                             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="p-3 rounded-2xl bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
                                         <BookOpen className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <h1 className="text-3xl font-black tracking-tight">Egram Study Mode</h1>
+                                        <h1 className="text-2xl font-black tracking-tight">Study & Focus Hub</h1>
                                         <p className="text-xs text-[var(--text-light)] font-medium">
-                                            Focus timer, study streaks & live collaboration
+                                            Track focus sessions, maintain streaks, and host live study rooms
                                         </p>
                                     </div>
                                 </div>
@@ -149,137 +136,101 @@ export default function StudyPage() {
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                className="glass rounded-[32px] p-6 sm:p-8 text-center relative overflow-hidden border-2 border-[var(--card-border)] shadow-2xl"
+                                className="glass-card p-6 sm:p-8 text-center relative overflow-hidden border border-[var(--card-border)] rounded-3xl shadow-xl space-y-6"
                             >
-                                <div className="flex items-center justify-center gap-3 mb-6">
+                                {/* Focus vs Break Pills */}
+                                <div className="flex items-center justify-center gap-2 p-1 bg-[var(--accent-bg)] rounded-2xl max-w-xs mx-auto border border-[var(--card-border)]">
                                     <button
                                         onClick={() => switchMode("focus")}
-                                        className={`px-5 py-2 rounded-xl text-xs font-black transition-all ${
+                                        className={`flex-1 py-2 px-4 rounded-xl text-xs font-black transition-all cursor-pointer ${
                                             mode === "focus"
-                                                ? "bg-[var(--primary)] text-white shadow-lg shadow-purple-500/20"
-                                                : "bg-[var(--accent-bg)] text-zinc-400"
+                                                ? "bg-indigo-500 text-white shadow-md"
+                                                : "text-[var(--text-light)] hover:text-[var(--text-dark)]"
                                         }`}
                                     >
                                         Focus (25m)
                                     </button>
                                     <button
                                         onClick={() => switchMode("break")}
-                                        className={`px-5 py-2 rounded-xl text-xs font-black transition-all ${
+                                        className={`flex-1 py-2 px-4 rounded-xl text-xs font-black transition-all cursor-pointer ${
                                             mode === "break"
-                                                ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/20"
-                                                : "bg-[var(--accent-bg)] text-zinc-400"
+                                                ? "bg-emerald-500 text-white shadow-md"
+                                                : "text-[var(--text-light)] hover:text-[var(--text-dark)]"
                                         }`}
                                     >
                                         Break (5m)
                                     </button>
                                 </div>
 
-                                <div className="my-8">
-                                    <span className="text-6xl sm:text-7xl font-black tracking-tighter font-mono text-[var(--text-dark)] drop-shadow-md">
+                                {/* Timer Display */}
+                                <div className="py-4">
+                                    <span className="text-6xl sm:text-7xl font-black tracking-tighter font-mono text-[var(--text-dark)] drop-shadow-sm">
                                         {formatTime(timeLeft)}
                                     </span>
-                                    <p className="text-xs font-bold text-[var(--text-light)] uppercase tracking-widest mt-3">
-                                        {mode === "focus" ? `Current Topic: ${topic}` : "Rest your eyes & hydrate 💧"}
-                                    </p>
+                                    <div className="mt-3 max-w-sm mx-auto">
+                                        <input
+                                            type="text"
+                                            value={topic}
+                                            onChange={(e) => setTopic(e.target.value)}
+                                            placeholder="E.g., Computer Science, Calculus, or Design"
+                                            className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-center text-xs font-bold text-[var(--text-dark)] py-2 px-4 rounded-xl outline-none focus:border-indigo-500 transition-all placeholder:text-[var(--text-light)]"
+                                        />
+                                    </div>
                                 </div>
 
-                                <div className="flex items-center justify-center gap-4">
+                                {/* Timer Controls */}
+                                <div className="flex items-center justify-center gap-3">
                                     <button
                                         onClick={() => setIsRunning(!isRunning)}
-                                        className={`flex items-center gap-2 px-8 py-3.5 rounded-2xl font-black text-sm text-white shadow-xl transition-all transform active:scale-95 ${
+                                        className={`flex items-center gap-2 px-7 py-3 rounded-2xl font-black text-xs sm:text-sm text-white shadow-lg transition-all active:scale-95 cursor-pointer ${
                                             isRunning
-                                                ? "bg-amber-600 hover:bg-amber-700 shadow-amber-600/30"
-                                                : "bg-[var(--primary)] hover:opacity-90 shadow-purple-600/30"
+                                                ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/20"
+                                                : "bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/20"
                                         }`}
                                     >
-                                        {isRunning ? <><Pause className="w-5 h-5" /> Pause</> : <><Play className="w-5 h-5" /> Start Focus</>}
+                                        {isRunning ? <><Pause className="w-4 h-4" /> Pause Session</> : <><Play className="w-4 h-4" /> Start Focus Session</>}
                                     </button>
+
                                     <button
                                         onClick={handleReset}
-                                        className="p-3.5 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)] text-zinc-400 hover:text-white transition-all active:scale-95"
+                                        className="p-3 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-light)] hover:text-[var(--text-dark)] transition-all active:scale-95 cursor-pointer"
                                         title="Reset Timer"
                                     >
-                                        <RotateCcw className="w-5 h-5" />
+                                        <RotateCcw className="w-4 h-4" />
                                     </button>
                                 </div>
                             </motion.div>
 
                             {/* Study Stats Grid */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                <div className="glass rounded-2xl p-4 text-center border border-[var(--card-border)]">
-                                    <Flame className="w-6 h-6 mx-auto text-orange-500 mb-1" />
-                                    <p className="text-xl font-black">{currentStreak} Days</p>
-                                    <p className="text-[10px] text-[var(--text-light)] font-bold uppercase tracking-wider">Current Streak</p>
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="glass-card p-4 text-center border border-[var(--card-border)] rounded-2xl">
+                                    <Clock className="w-5 h-5 text-indigo-500 mx-auto mb-1" />
+                                    <span className="text-lg font-black text-[var(--text-dark)]">{todayMinutes}m</span>
+                                    <span className="text-[10px] font-bold text-[var(--text-light)] block uppercase tracking-wider">Today</span>
                                 </div>
 
-                                <div className="glass rounded-2xl p-4 text-center border border-[var(--card-border)]">
-                                    <CheckCircle2 className="w-6 h-6 mx-auto text-emerald-500 mb-1" />
-                                    <p className="text-xl font-black">{completedSessions}</p>
-                                    <p className="text-[10px] text-[var(--text-light)] font-bold uppercase tracking-wider">Sessions Today</p>
+                                <div className="glass-card p-4 text-center border border-[var(--card-border)] rounded-2xl">
+                                    <Target className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
+                                    <span className="text-lg font-black text-[var(--text-dark)]">{completedSessions}</span>
+                                    <span className="text-[10px] font-bold text-[var(--text-light)] block uppercase tracking-wider">Sessions</span>
                                 </div>
 
-                                <div className="glass rounded-2xl p-4 text-center border border-[var(--card-border)]">
-                                    <Clock className="w-6 h-6 mx-auto text-blue-500 mb-1" />
-                                    <p className="text-xl font-black">{todayMinutes}m</p>
-                                    <p className="text-[10px] text-[var(--text-light)] font-bold uppercase tracking-wider">Today's Focus</p>
+                                <div className="glass-card p-4 text-center border border-[var(--card-border)] rounded-2xl">
+                                    <Flame className="w-5 h-5 text-amber-500 fill-amber-500 mx-auto mb-1 animate-pulse" />
+                                    <span className="text-lg font-black text-amber-500">{currentStreak}d</span>
+                                    <span className="text-[10px] font-bold text-[var(--text-light)] block uppercase tracking-wider">Streak</span>
                                 </div>
-
-                                <div className="glass rounded-2xl p-4 text-center border border-[var(--card-border)]">
-                                    <Target className="w-6 h-6 mx-auto text-purple-500 mb-1" />
-                                    <p className="text-xl font-black">{(weeklyMinutes / 60).toFixed(1)}h</p>
-                                    <p className="text-[10px] text-[var(--text-light)] font-bold uppercase tracking-wider">Weekly Focus</p>
-                                </div>
-                            </div>
-
-                            {/* Leaderboard Section */}
-                            <div className="glass rounded-3xl p-6 border border-[var(--card-border)] space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Trophy className="w-5 h-5 text-amber-400" />
-                                        <h3 className="font-black text-base">Study Leaderboard</h3>
-                                    </div>
-                                    <span className="text-[10px] font-bold text-purple-400 uppercase tracking-widest bg-purple-500/10 px-3 py-1 rounded-full">
-                                        Weekly Top
-                                    </span>
-                                </div>
-
-                                {leaderboard.length === 0 ? (
-                                    <div className="text-center py-10 rounded-2xl border border-dashed border-[var(--card-border)] bg-[var(--accent-bg)]">
-                                        <Trophy className="w-8 h-8 mx-auto text-zinc-500 opacity-40 mb-1" />
-                                        <p className="text-xs font-bold text-zinc-400">No study rankings yet.</p>
-                                        <p className="text-[11px] text-[var(--text-light)]">Start a focus session to rank on the leaderboard!</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {leaderboard.map((item) => (
-                                            <div key={item.rank} className="flex items-center justify-between p-3 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)]">
-                                                <div className="flex items-center gap-3">
-                                                    <span className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs ${
-                                                        item.rank === 1 ? "bg-amber-500 text-black" :
-                                                        item.rank === 2 ? "bg-zinc-300 text-black" :
-                                                        item.rank === 3 ? "bg-amber-700 text-white" : "bg-zinc-800 text-zinc-400"
-                                                    }`}>
-                                                        #{item.rank}
-                                                    </span>
-                                                    <div>
-                                                        <p className="text-xs font-black">{item.name}</p>
-                                                        <p className="text-[10px] text-[var(--text-light)] font-bold">{item.college}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-xs font-black text-[var(--primary)]">{item.hours}</p>
-                                                    <p className="text-[10px] text-orange-500 font-bold">🔥 {item.streak}d streak</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
                             </div>
 
                         </div>
 
-                        <RightSidebar user={user} handleSignOut={() => auth.signOut()} getInitials={getInitials} />
+                        <RightSidebar
+                            user={user}
+                            handleSignOut={() => auth.signOut().then(() => router.push("/login"))}
+                            getInitials={getInitials}
+                        />
                     </main>
+
                     <MobileNav
                         onOpenCreatePost={() => setIsPostModalOpen(true)}
                         onOpenCreateMeet={() => setIsModalOpen(true)}
@@ -287,9 +238,25 @@ export default function StudyPage() {
                         currentUserId={user.uid}
                     />
 
-                    <CreateMeetModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} user={user} getInitials={getInitials} />
-                    <CreatePostModal isOpen={isPostModalOpen} onClose={() => setIsPostModalOpen(false)} user={user} />
-                    <CreateStoryModal isOpen={isStoryModalOpen} onClose={() => setIsStoryModalOpen(false)} currentUser={user} onStoryCreated={() => window.dispatchEvent(new Event("userProfileUpdated"))} />
+                    <CreateMeetModal
+                        isOpen={isModalOpen}
+                        onClose={() => setIsModalOpen(false)}
+                        user={user}
+                        getInitials={getInitials}
+                    />
+
+                    <CreatePostModal
+                        isOpen={isPostModalOpen}
+                        onClose={() => setIsPostModalOpen(false)}
+                        user={user}
+                    />
+
+                    <CreateStoryModal
+                        isOpen={isStoryModalOpen}
+                        onClose={() => setIsStoryModalOpen(false)}
+                        currentUser={user}
+                        onStoryCreated={() => window.dispatchEvent(new Event("userProfileUpdated"))}
+                    />
                 </div>
             )}
         </>

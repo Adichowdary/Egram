@@ -195,7 +195,7 @@ export function FollowListModal({
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder={`Search ${activeTab}...`}
+                                placeholder=""
                                 className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)] text-xs rounded-xl pl-10 pr-8 py-2.5 focus:outline-none focus:border-[var(--primary)] font-medium placeholder:text-[var(--text-light)] placeholder:opacity-60 placeholder:font-normal truncate"
                             />
                             {searchQuery && (

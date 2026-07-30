@@ -5,6 +5,7 @@ import { User } from "firebase/auth";
 import { PostSkeleton } from "./Skeletons";
 import { PostCard } from "./PostCard";
 import { Post } from "@/hooks/usePosts";
+import { Sparkles, Users } from "lucide-react";
 
 let globalFeedCache: Post[] | null = null;
 let followingFeedCache: Post[] | null = null;
@@ -20,7 +21,6 @@ export function PostFeed({ user, feedType = "global" }: { user: User, feedType?:
         return name.substring(0, 2).toUpperCase();
     };
 
-    // 1. Fetch Following IDs (only if needed)
     useEffect(() => {
         if (feedType === "following") {
             const q = query(collection(db, "follows"), where("followerId", "==", user.uid));
@@ -31,7 +31,6 @@ export function PostFeed({ user, feedType = "global" }: { user: User, feedType?:
         }
     }, [feedType, user.uid]);
 
-    // 2. Fetch Posts based on feedType
     useEffect(() => {
         const currentCache = feedType === "following" ? followingFeedCache : globalFeedCache;
         if (!currentCache) {
@@ -53,8 +52,8 @@ export function PostFeed({ user, feedType = "global" }: { user: User, feedType?:
                         authorName: p.author?.name || "Anonymous",
                         authorInitials: getInitials(p.author?.name),
                         content: p.content,
-                        mediaUrl: p.images?.[0], // Map images array to mediaUrl for compatibility
-                        timestamp: { toDate: () => new Date(p.createdAt) }, // Mock Firestore timestamp for compatibility
+                        mediaUrl: p.images?.[0],
+                        timestamp: { toDate: () => new Date(p.createdAt) },
                         likes: p.likes || [],
                         commentsCount: p.comments?.length || 0,
                         initialComments: p.comments || []
@@ -84,7 +83,7 @@ export function PostFeed({ user, feedType = "global" }: { user: User, feedType?:
 
     if (loading) {
         return (
-            <div className="space-y-6">
+            <div className="space-y-5">
                 <PostSkeleton />
                 <PostSkeleton />
             </div>
@@ -93,22 +92,26 @@ export function PostFeed({ user, feedType = "global" }: { user: User, feedType?:
 
     if (posts.length === 0) {
         return (
-            <div className="text-center py-10 border border-dashed border-zinc-800 rounded-2xl text-zinc-500 bg-zinc-900/10">
+            <div className="glass-card p-10 text-center border border-dashed border-[var(--card-border)] rounded-3xl space-y-3">
                 {feedType === "following" ? (
-                    <>
-                        <p className="font-semibold text-zinc-400 mb-2">Your following feed is empty</p>
-                        <p className="text-xs">Follow other users to see their posts here!</p>
-                    </>
+                    <div className="flex flex-col items-center gap-2">
+                        <Users className="w-8 h-8 text-indigo-500 opacity-60" />
+                        <p className="font-extrabold text-sm text-[var(--text-dark)]">Your following feed is empty</p>
+                        <p className="text-xs text-[var(--text-light)] max-w-xs">Follow fellow students and creators to discover their daily posts here!</p>
+                    </div>
                 ) : (
-                    <p>No posts yet. Be the first to share your learning journey!</p>
+                    <div className="flex flex-col items-center gap-2">
+                        <Sparkles className="w-8 h-8 text-amber-500 opacity-60" />
+                        <p className="font-extrabold text-sm text-[var(--text-dark)]">No posts shared yet</p>
+                        <p className="text-xs text-[var(--text-light)]">Be the first to share a post or learning update with the community!</p>
+                    </div>
                 )}
             </div>
         );
     }
 
     return (
-        <div className="space-y-6">
-            <h2 className="section-title">Day-to-Day Records</h2>
+        <div className="space-y-5">
             {posts.map((post) => (
                 <PostCard
                     key={post.id}

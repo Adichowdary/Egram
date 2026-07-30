@@ -67,7 +67,7 @@ export default function ExplorePage() {
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-light)] group-focus-within:text-[var(--primary)] transition-colors pointer-events-none z-10 opacity-60" />
                             <input
                                 type="text"
-                                placeholder="Search topic or host..."
+                                placeholder=""
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl pl-10 pr-4 py-2.5 w-full md:w-80 text-xs sm:text-sm text-[var(--text-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium placeholder:text-[var(--text-light)] placeholder:opacity-60 placeholder:font-normal truncate"

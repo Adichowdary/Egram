@@ -1,10 +1,8 @@
 import { useState, useRef } from "react";
-import { X, Image as ImageIcon, Send } from "lucide-react";
+import { X, Image as ImageIcon, Send, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { User } from "firebase/auth";
 import { useToast } from "@/components/ToastProvider";
-import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "@/lib/firebase";
 
 interface CreatePostModalProps {
     isOpen: boolean;
@@ -24,7 +22,7 @@ export function CreatePostModal({ isOpen, onClose, user }: CreatePostModalProps)
         const file = e.target.files?.[0];
         if (file) {
             if (file.size > 25 * 1024 * 1024) {
-                addToast("⚠️ This file is not uploaded! Image size is too large (Not enough space). Max size 25MB.", "error");
+                addToast("⚠️ Image size is too large (Max size 25MB).", "error");
                 e.target.value = "";
                 return;
             }
@@ -71,7 +69,7 @@ export function CreatePostModal({ isOpen, onClose, user }: CreatePostModalProps)
             });
 
             if (res.ok) {
-                addToast("Post shared successfully!", "success");
+                addToast("🎉 Post shared successfully!", "success");
                 setContent("");
                 setImageFile(null);
                 setImagePreview(null);
@@ -92,52 +90,61 @@ export function CreatePostModal({ isOpen, onClose, user }: CreatePostModalProps)
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    className="modal-overlay active"
+                    className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4"
                     onClick={onClose}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                 >
                     <motion.div
-                        className="modal card glass"
-                        style={{ padding: "1.5rem", maxWidth: "500px", borderRadius: "24px", width: "100%" }}
+                        className="bg-[#1e1e1e] w-full max-w-lg p-6 sm:p-7 border border-[rgba(255,255,255,0.08)] rounded-2xl shadow-2xl space-y-5 relative"
                         onClick={e => e.stopPropagation()}
-                        initial={{ scale: 0.9, y: 20 }}
+                        initial={{ scale: 0.94, y: 20 }}
                         animate={{ scale: 1, y: 0 }}
-                        exit={{ scale: 0.9, y: 20 }}
+                        exit={{ scale: 0.94, y: 20 }}
+                        transition={{ type: "spring", damping: 25, stiffness: 300 }}
                     >
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold">Share Your Progress</h2>
-                            <button className="icon-btn" onClick={onClose}><X size={20} /></button>
+                        <div className="flex items-center justify-between pb-3.5 border-b border-[rgba(255,255,255,0.08)]">
+                            <div className="flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-blue-400" />
+                                <h2 className="text-lg font-bold text-white tracking-tight">Create Post</h2>
+                            </div>
+                            <button 
+                                className="p-2 rounded-full bg-[#242424] text-[#a0a0a0] hover:text-white transition-all cursor-pointer border border-[rgba(255,255,255,0.08)]"
+                                onClick={onClose}
+                            >
+                                <X size={18} />
+                            </button>
                         </div>
 
                         <div className="space-y-4">
                             <textarea
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
-                                className="w-full bg-zinc-950/20 border border-[var(--card-border)] rounded-2xl p-4 text-[var(--text-dark)] focus:outline-none focus:border-[var(--primary)] resize-none h-32"
-                                placeholder="What did you learn today?"
+                                className="w-full bg-[#242424] border border-[rgba(255,255,255,0.08)] rounded-xl p-4 text-xs sm:text-sm text-white placeholder:text-[#a0a0a0] focus:outline-none focus:border-blue-500 resize-none h-36 leading-relaxed"
+                                placeholder="What are you studying or building today? Share your progress, code, or thoughts..."
                             />
 
                             {imagePreview && (
-                                <div className="relative rounded-2xl overflow-hidden border border-[var(--card-border)] aspect-video bg-black/40">
+                                <div className="relative rounded-xl overflow-hidden border border-[rgba(255,255,255,0.08)] aspect-video bg-black/60">
                                     <img src={imagePreview} className="w-full h-full object-cover" alt="Preview" />
                                     <button 
                                         onClick={() => { setImageFile(null); setImagePreview(null); }}
-                                        className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full text-white hover:bg-black/80"
+                                        className="absolute top-2 right-2 p-2 bg-black/80 rounded-full text-white hover:bg-black transition-all cursor-pointer"
                                     >
-                                        <X size={16} />
+                                        <X size={14} />
                                     </button>
                                 </div>
                             )}
 
-                            <div className="flex items-center justify-between">
+                            {/* Action Buttons Box */}
+                            <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#242424] border border-[rgba(255,255,255,0.08)]">
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="flex items-center gap-2 p-3 rounded-xl hover:bg-white/5 transition-colors text-[var(--text-light)]"
+                                    className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#1e1e1e] border border-[rgba(255,255,255,0.08)] hover:border-blue-500/40 transition-all text-xs font-bold text-white cursor-pointer"
                                 >
-                                    <ImageIcon size={20} className="text-blue-500" />
-                                    <span className="text-xs font-bold">Add Image</span>
+                                    <ImageIcon size={16} className="text-emerald-400" />
+                                    <span>Attach Media</span>
                                 </button>
                                 <input 
                                     type="file" 
@@ -150,14 +157,14 @@ export function CreatePostModal({ isOpen, onClose, user }: CreatePostModalProps)
                                 <button
                                     onClick={handleSubmit}
                                     disabled={isSubmitting || (!content.trim() && !imageFile)}
-                                    className="flex items-center gap-2 bg-[var(--primary)] text-white px-6 py-2.5 rounded-xl font-bold hover:opacity-90 disabled:opacity-50 shadow-lg shadow-purple-500/20 transition-all cursor-pointer"
+                                    className="flex items-center gap-2 bg-[#3b82f6] text-white px-5 py-2.5 rounded-lg font-bold text-xs hover:bg-blue-600 disabled:opacity-40 shadow-md transition-all cursor-pointer"
                                 >
                                     {isSubmitting ? (
                                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     ) : (
-                                        <Send size={16} />
+                                        <Send size={14} />
                                     )}
-                                    {isSubmitting ? "Posting..." : "Post"}
+                                    <span>{isSubmitting ? "Publishing..." : "Publish Post"}</span>
                                 </button>
                             </div>
                         </div>

@@ -4,9 +4,8 @@ import { useState, useRef } from "react";
 import { X, Camera, Save, User, Mail, GraduationCap, BookOpen, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { updateProfile } from "firebase/auth";
-import { auth, storage, db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { doc, setDoc } from "firebase/firestore";
-import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useToast } from "@/components/ToastProvider";
 
 interface EditProfileModalProps {
@@ -37,7 +36,6 @@ export function EditProfileModal({ isOpen, onClose, user, currentData, onProfile
 
         setIsUploading(true);
 
-        // Optimistic local preview
         const reader = new FileReader();
         reader.onload = (evt) => {
             if (evt.target?.result) {
@@ -74,14 +72,12 @@ export function EditProfileModal({ isOpen, onClose, user, currentData, onProfile
             setAvatarUrl(photoPath);
             await updateProfile(auth.currentUser!, { photoURL: photoPath }).catch(() => {});
             
-            // Sync to MongoDB
             await fetch(`/api/users/${user.uid}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ avatarUrl: photoPath }),
             });
 
-            // Sync to Firestore for real-time listeners & stories
             try {
                 const userRef = doc(db, "users", user.uid);
                 await setDoc(userRef, { photoURL: photoPath, avatarUrl: photoPath }, { merge: true });
@@ -89,7 +85,6 @@ export function EditProfileModal({ isOpen, onClose, user, currentData, onProfile
                 console.error("Firestore sync error:", e);
             }
 
-            // Dispatch instant global custom event for immediate UI updates
             window.dispatchEvent(new CustomEvent("userProfileUpdated", { detail: { avatarUrl: photoPath } }));
             addToast("Profile picture updated!", "success");
         } catch (err) {
@@ -127,7 +122,6 @@ export function EditProfileModal({ isOpen, onClose, user, currentData, onProfile
                     await updateProfile(auth.currentUser, { displayName: name.trim() }).catch(() => {});
                 }
 
-                // Sync to Firestore for real-time listeners & stories
                 try {
                     const userRef = doc(db, "users", user.uid);
                     await setDoc(userRef, { displayName: name.trim(), photoURL: avatarUrl, avatarUrl }, { merge: true });
@@ -154,173 +148,145 @@ export function EditProfileModal({ isOpen, onClose, user, currentData, onProfile
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: 15 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                    className="w-full max-w-lg bg-[var(--card-bg)] border border-[var(--card-border)] rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+                    className="w-full max-w-lg glass-card border border-[var(--card-border)] rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
                 >
                     {/* Header */}
-                    <div className="p-5 border-b border-[var(--card-border)] flex items-center justify-between bg-zinc-950/40">
+                    <div className="p-5 border-b border-[var(--card-border)] flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <Sparkles className="w-5 h-5 text-blue-500" />
+                            <Sparkles className="w-5 h-5 text-indigo-500" />
                             <h2 className="text-lg font-black text-[var(--text-dark)] tracking-tight">Edit Profile</h2>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                            className="p-2 rounded-full bg-[var(--accent-bg)] text-[var(--text-light)] hover:text-[var(--text-dark)] transition-colors cursor-pointer"
                         >
-                            <X className="w-5 h-5" />
+                            <X className="w-4 h-4" />
                         </button>
                     </div>
 
-                    {/* Form Scroll Body */}
-                    <form onSubmit={handleSave} className="p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1">
+                    {/* Form Body */}
+                    <form onSubmit={handleSave} className="p-6 space-y-4 overflow-y-auto no-scrollbar flex-1">
                         
                         {/* Avatar Section */}
-                        <div className="space-y-3 p-4 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)]">
-                            <div className="flex items-center gap-5">
-                                <div className="relative group cursor-pointer flex-shrink-0" onClick={() => fileInputRef.current?.click()}>
-                                    <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-blue-500/50 bg-zinc-900 flex items-center justify-center text-xl font-black shadow-lg">
-                                        {avatarUrl ? (
-                                            <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <span className="text-white text-2xl">{name ? name.substring(0, 2).toUpperCase() : "U"}</span>
-                                        )}
-                                    </div>
-                                    <div className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                                        <Camera className="w-6 h-6" />
-                                    </div>
+                        <div className="flex items-center gap-4 p-4 rounded-2xl bg-[var(--accent-bg)] border border-[var(--card-border)]">
+                            <div className="relative group cursor-pointer flex-shrink-0" onClick={() => fileInputRef.current?.click()}>
+                                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-indigo-500/50 bg-indigo-500/10 flex items-center justify-center text-lg font-black text-indigo-500 shadow-md">
+                                    {avatarUrl ? (
+                                        <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span>{name ? name.substring(0, 2).toUpperCase() : "U"}</span>
+                                    )}
                                 </div>
-
-                                <div className="space-y-1">
-                                    <h4 className="text-sm font-bold text-white">{name || "Student"}</h4>
-                                    <p className="text-xs text-zinc-400">{user.email}</p>
-                                    <button
-                                        type="button"
-                                        disabled={isUploading}
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="text-xs font-bold text-blue-400 hover:underline pt-1 block"
-                                    >
-                                        {isUploading ? "Uploading photo..." : "Upload New Photo"}
-                                    </button>
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        onChange={handleAvatarUpload}
-                                        accept="image/*"
-                                        className="hidden"
-                                    />
+                                <div className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                                    <Camera className="w-5 h-5" />
                                 </div>
                             </div>
 
-                            {/* Quick Emoji Avatar Picker Grid */}
-                            <div className="pt-2 border-t border-[var(--card-border)]">
-                                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-zinc-400 mb-2">Or Choose an Avatar Emoji</label>
-                                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                                    {["🎓", "🚀", "💻", "🧠", "⚡", "🔥", "🏆", "🌟", "🎨", "🧪", "🦁", "🦊", "🦉", "🦄", "👨‍🎓", "👩‍🎓"].map((emoji) => {
-                                        const generateSvg = (e: string) => {
-                                            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#2563eb"/><stop offset="100%" stop-color="#9333ea"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(#g)"/><text x="50%" y="55%" font-size="52" text-anchor="middle" dominant-baseline="middle">${e}</text></svg>`;
-                                            return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-                                        };
-                                        return (
-                                            <button
-                                                key={emoji}
-                                                type="button"
-                                                onClick={() => {
-                                                    const svgUrl = generateSvg(emoji);
-                                                    setAvatarUrl(svgUrl);
-                                                    addToast(`Selected ${emoji} avatar!`, "info");
-                                                }}
-                                                className="w-9 h-9 rounded-xl bg-zinc-900 hover:bg-blue-600/30 border border-zinc-700/60 flex items-center justify-center text-lg hover:scale-110 active:scale-95 transition-all flex-shrink-0"
-                                                title={`Set ${emoji} as avatar`}
-                                            >
-                                                {emoji}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                            <div className="space-y-1">
+                                <h4 className="text-sm font-extrabold text-[var(--text-dark)]">{name || "Student"}</h4>
+                                <p className="text-xs text-[var(--text-light)]">{user.email}</p>
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="text-xs font-bold text-indigo-500 hover:underline cursor-pointer"
+                                >
+                                    {isUploading ? "Uploading..." : "Change Profile Photo"}
+                                </button>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleAvatarUpload}
+                                    accept="image/*"
+                                    className="hidden"
+                                />
                             </div>
                         </div>
 
                         {/* Full Name */}
-                        <div>
-                            <label className="block text-xs sm:text-sm font-extrabold uppercase tracking-wider text-zinc-400 mb-1.5 ml-1">Full Name</label>
+                        <div className="space-y-1">
+                            <label className="text-xs font-black text-[var(--text-dark)] uppercase tracking-wider">Full Name</label>
                             <input
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)] text-base sm:text-lg font-bold rounded-2xl px-4.5 py-4 min-h-[52px] sm:min-h-[56px] outline-none focus:border-blue-500 transition-colors"
-                                placeholder="Enter your full name"
+                                placeholder="E.g., Alex Rivers"
+                                className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] focus:border-indigo-500 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-[var(--text-dark)] font-bold outline-none transition-all placeholder:text-[var(--text-light)]"
                                 required
                             />
                         </div>
 
                         {/* Username */}
-                        <div>
-                            <label className="block text-xs sm:text-sm font-extrabold uppercase tracking-wider text-zinc-400 mb-1.5 ml-1">Username</label>
+                        <div className="space-y-1">
+                            <label className="text-xs font-black text-[var(--text-dark)] uppercase tracking-wider">Username</label>
                             <input
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)] text-base sm:text-lg font-bold rounded-2xl px-4.5 py-4 min-h-[52px] sm:min-h-[56px] outline-none focus:border-blue-500 transition-colors"
-                                placeholder="username"
+                                placeholder="E.g., alex_dev"
+                                className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] focus:border-indigo-500 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-[var(--text-dark)] font-bold outline-none transition-all placeholder:text-[var(--text-light)]"
                             />
                         </div>
 
                         {/* Bio */}
-                        <div>
-                            <label className="block text-xs sm:text-sm font-extrabold uppercase tracking-wider text-zinc-400 mb-1.5 ml-1">Bio</label>
+                        <div className="space-y-1">
+                            <label className="text-xs font-black text-[var(--text-dark)] uppercase tracking-wider">Bio & Interests</label>
                             <textarea
                                 value={bio}
                                 onChange={(e) => setBio(e.target.value)}
-                                className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)] text-base sm:text-lg font-medium rounded-2xl p-4 outline-none focus:border-blue-500 resize-none h-28 transition-colors"
-                                placeholder="Share a short bio about your goals and interests..."
-                                maxLength={160}
+                                placeholder="E.g., Full Stack Engineer & Open Source contributor. Learning AI systems and building modern apps!"
+                                className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] focus:border-indigo-500 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-[var(--text-dark)] font-medium outline-none transition-all resize-none h-24 placeholder:text-[var(--text-light)]"
                             />
                         </div>
 
-                        {/* Academic Fields */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs sm:text-sm font-extrabold uppercase tracking-wider text-zinc-400 mb-1.5 ml-1">College / Uni</label>
-                                <input
-                                    type="text"
-                                    value={college}
-                                    onChange={(e) => setCollege(e.target.value)}
-                                    className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)] text-base sm:text-lg font-bold rounded-2xl px-4.5 py-4 min-h-[52px] sm:min-h-[56px] outline-none focus:border-blue-500 transition-colors"
-                                    placeholder="e.g. Stanford University"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs sm:text-sm font-extrabold uppercase tracking-wider text-zinc-400 mb-1.5 ml-1">Branch & Year</label>
-                                <input
-                                    type="text"
-                                    value={branch}
-                                    onChange={(e) => setBranch(e.target.value)}
-                                    className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)] text-base sm:text-lg font-bold rounded-2xl px-4.5 py-4 min-h-[52px] sm:min-h-[56px] outline-none focus:border-blue-500 transition-colors"
-                                    placeholder="e.g. Computer Science - 3rd Year"
-                                />
-                            </div>
+                        {/* University / College */}
+                        <div className="space-y-1">
+                            <label className="text-xs font-black text-[var(--text-dark)] uppercase tracking-wider">University / College</label>
+                            <input
+                                type="text"
+                                value={college}
+                                onChange={(e) => setCollege(e.target.value)}
+                                placeholder="E.g., Stanford University / MIT"
+                                className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] focus:border-indigo-500 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-[var(--text-dark)] font-bold outline-none transition-all placeholder:text-[var(--text-light)]"
+                            />
                         </div>
 
-                        {/* Footer Actions */}
-                        <div className="pt-4 border-t border-[var(--card-border)] flex items-center justify-end gap-3">
+                        {/* Branch / Major */}
+                        <div className="space-y-1">
+                            <label className="text-xs font-black text-[var(--text-dark)] uppercase tracking-wider">Branch / Major</label>
+                            <input
+                                type="text"
+                                value={branch}
+                                onChange={(e) => setBranch(e.target.value)}
+                                placeholder="E.g., Computer Science & Engineering"
+                                className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] focus:border-indigo-500 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-[var(--text-dark)] font-bold outline-none transition-all placeholder:text-[var(--text-light)]"
+                            />
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="pt-3 border-t border-[var(--card-border)] flex items-center justify-end gap-3">
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="px-6 py-3.5 rounded-2xl bg-zinc-800 text-sm font-bold text-zinc-300 hover:bg-zinc-700 transition-colors min-h-[48px]"
+                                className="px-4 py-2.5 rounded-xl border border-[var(--card-border)] text-xs font-bold text-[var(--text-light)] hover:text-[var(--text-dark)] transition-all cursor-pointer"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
                                 disabled={isSaving}
-                                className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-black shadow-lg shadow-blue-500/20 hover:opacity-95 disabled:opacity-50 flex items-center gap-2 min-h-[48px]"
+                                className="px-5 py-2.5 rounded-xl bg-indigo-500 text-white font-black text-xs hover:bg-indigo-600 shadow-md shadow-indigo-500/20 transition-all cursor-pointer flex items-center gap-2"
                             >
-                                <Save className="w-4.5 h-4.5" />
-                                <span>{isSaving ? "Saving..." : "Save Profile"}</span>
+                                {isSaving ? (
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                    <Save className="w-4 h-4" />
+                                )}
+                                <span>{isSaving ? "Saving..." : "Save Changes"}</span>
                             </button>
                         </div>
 

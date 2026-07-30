@@ -1,125 +1,143 @@
-import { useState, useEffect } from "react";
-import { User } from "firebase/auth";
-import { User as UserIcon, Info } from "lucide-react";
+"use client";
+
+import { useEffect, useState } from "react";
+import { User, signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { LogOut, Video, BookOpen, Flame, ArrowRight, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import { useRooms } from "@/hooks/useRooms";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 interface RightSidebarProps {
     user: User;
-    handleSignOut: () => void;
+    handleSignOut?: () => void;
     getInitials: (name: string | null) => string;
 }
 
-const sidebarMongoCache = new Map<string, any>();
-const sidebarFirestoreCache = new Map<string, any>();
-
 export function RightSidebar({ user, handleSignOut, getInitials }: RightSidebarProps) {
-    const { rooms, loading } = useRooms();
+    const { rooms, loading: loadingRooms } = useRooms();
 
-    const [userData, setUserData] = useState<any>(() => user?.uid ? sidebarFirestoreCache.get(user.uid) || null : null);
-    const [mongoProfile, setMongoProfile] = useState<any>(() => user?.uid ? sidebarMongoCache.get(user.uid) || null : null);
+    const [userPhoto, setUserPhoto] = useState<string | null>(user?.photoURL || null);
+    const [userName, setUserName] = useState<string>(user?.displayName || user?.email?.split('@')[0] || "Learner");
+    const [userStreak, setUserStreak] = useState<number>(0);
 
-    const fetchUserData = async () => {
+    const fetchRightSidebarUser = async () => {
         if (!user?.uid) return;
         try {
-            // Fetch MongoDB user profile for primary display
             const res = await fetch(`/api/users/${user.uid}?t=${Date.now()}`, { cache: "no-store" });
             if (res.ok) {
                 const data = await res.json();
-                sidebarMongoCache.set(user.uid, data);
-                setMongoProfile(data);
+                if (data.avatarUrl) setUserPhoto(data.avatarUrl);
+                if (data.name) setUserName(data.name);
+                setUserStreak(data.currentStreak || data.streak || 0);
             }
-
-            // Fetch Firestore doc for legacy/streak data
-            const userRef = doc(db, "users", user.uid);
-            const userSnap = await getDoc(userRef);
-            if (userSnap.exists()) {
-                const fData = userSnap.data();
-                sidebarFirestoreCache.set(user.uid, fData);
-                setUserData(fData);
-            }
-        } catch (err) {
-            console.error("Failed to fetch user data for sidebar", err);
+        } catch (e) {
+            console.error(e);
         }
     };
 
     useEffect(() => {
-        fetchUserData();
+        fetchRightSidebarUser();
 
-        const handleProfileUpdate = (e: Event) => {
+        const handleUpdate = (e: Event) => {
             const customEvt = e as CustomEvent;
-            if (customEvt?.detail?.avatarUrl) {
-                setMongoProfile((prev: any) => ({ ...prev, avatarUrl: customEvt.detail.avatarUrl }));
-            }
-            fetchUserData();
+            if (customEvt?.detail?.avatarUrl) setUserPhoto(customEvt.detail.avatarUrl);
+            if (customEvt?.detail?.name) setUserName(customEvt.detail.name);
+            fetchRightSidebarUser();
         };
-        window.addEventListener("userProfileUpdated", handleProfileUpdate);
-        return () => window.removeEventListener("userProfileUpdated", handleProfileUpdate);
+
+        window.addEventListener("userProfileUpdated", handleUpdate);
+        return () => window.removeEventListener("userProfileUpdated", handleUpdate);
     }, [user?.uid]);
 
-    const displayName = mongoProfile?.name || userData?.displayName || user.displayName || (user.email ? user.email.split('@')[0] : "Student");
-    const avatarUrl = mongoProfile?.avatarUrl || user.photoURL;
-
     return (
-        <aside className="right-sidebar">
-            {/* Mini Profile */}
-            <div className="mini-profile">
-                <div className="profile-avatar overflow-hidden rounded-full w-14 h-14 border-2 border-[var(--primary)] border-opacity-30">
-                    {avatarUrl ? (
-                        <img src={avatarUrl} alt="Your Profile" className="w-full h-full object-cover" />
-                    ) : (
-                        <div className="w-full h-full bg-[var(--primary-bg)] text-[var(--primary)] flex items-center justify-center font-bold text-xl uppercase">
-                            {getInitials(displayName)}
-                        </div>
-                    )}
-                </div>
-                <div className="profile-info">
-                    <span className="username truncate max-w-[150px] text-[var(--text-dark)] font-bold">{displayName}</span>
-                    <span className="fullname flex items-center gap-1 text-[var(--text-light)]">
-                        Student •
-                        <div className="flex items-center gap-1 relative group cursor-pointer ml-1 whitespace-nowrap">
-                            <span style={{ color: "#ff6b6b", fontWeight: "bold" }}>{mongoProfile?.currentStreak || userData?.streak || 0} Day Streak</span>
-                            <span className="inline-flex items-center justify-center animate-pulse drop-shadow-[0_0_8px_rgba(255,107,107,0.8)] filter leading-none text-sm">🔥</span>
-                            <Info className="w-3.5 h-3.5 text-[var(--text-light)] group-hover:text-[var(--text-dark)] transition-colors opacity-50" />
-
-                            {/* Tooltip */}
-                            <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-48 p-3 bg-[var(--card-bg)] text-xs text-[var(--text-dark)] rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[100] shadow-2xl border border-[var(--card-border)] pointer-events-none text-center">
-                                <span className="font-semibold text-[#ff6b6b] block mb-1">Streak Life: 24 Hours</span>
-                                Maintain your streak by logging in or posting daily!
-                                <div className="absolute left-1/2 -translate-x-1/2 bottom-full border-4 border-transparent border-b-[var(--card-border)]"></div>
+        <aside className="right-sidebar space-y-6">
+            {/* 1. Mini Profile Card Widget */}
+            <div className="bg-[#1e1e1e] p-4 sm:p-5 border border-[rgba(255,255,255,0.08)] rounded-2xl shadow-lg relative overflow-hidden space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                    <Link href={`/profile/${user.uid}`} className="flex items-center gap-3 group min-w-0 flex-1">
+                        <div className="w-11 h-11 rounded-full p-[2px] bg-gradient-to-tr from-blue-500 to-purple-500 shadow-sm flex-shrink-0">
+                            <div className="w-full h-full rounded-full bg-[#121212] p-0.5 overflow-hidden flex items-center justify-center font-bold text-sm text-blue-400">
+                                {userPhoto ? (
+                                    <img src={userPhoto} alt="Avatar" className="w-full h-full object-cover rounded-full" />
+                                ) : (
+                                    getInitials(userName)
+                                )}
                             </div>
                         </div>
+                        <div className="flex flex-col min-w-0 flex-1">
+                            <span className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors truncate block">
+                                {userName}
+                            </span>
+                            <div className="flex items-center gap-1 text-xs text-[#a0a0a0] font-medium">
+                                <span className="truncate">Verified Learner</span>
+                                <ShieldCheck className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                            </div>
+                        </div>
+                    </Link>
+
+                    <button
+                        onClick={handleSignOut || (() => signOut(auth))}
+                        className="p-2 rounded-xl bg-[#242424] hover:bg-rose-500/10 text-[#a0a0a0] hover:text-rose-400 transition-all cursor-pointer flex-shrink-0 border border-[rgba(255,255,255,0.08)]"
+                        title="Sign Out"
+                    >
+                        <LogOut className="w-4 h-4" />
+                    </button>
+                </div>
+
+                {/* Daily Streak Chip */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-[#242424] border border-amber-500/20 text-amber-400 text-xs font-bold gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <Flame className="w-4 h-4 fill-amber-400 animate-pulse flex-shrink-0" />
+                        <span className="truncate">Daily Study Streak</span>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold text-[11px] flex-shrink-0 border border-amber-500/30">
+                        {userStreak} {userStreak === 1 ? 'Day' : 'Days'}
                     </span>
                 </div>
-                <button onClick={handleSignOut} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-extrabold text-xs sm:text-sm rounded-xl transition-all active:scale-95 shadow-sm min-h-[38px] cursor-pointer">
-                    Logout
-                </button>
             </div>
 
-            {/* Meet Rooms Widget */}
-            <div className="rooms-widget">
-                <div className="widget-header">
-                    <h4>Upcoming Study Rooms</h4>
-                    <span>See All</span>
+            {/* 2. Study Rooms Widget */}
+            <div className="bg-[#1e1e1e] p-4 sm:p-5 border border-[rgba(255,255,255,0.08)] rounded-2xl shadow-lg space-y-4">
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <Video className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-white truncate">Live Study Rooms</h3>
+                    </div>
+                    <Link href="/study" className="text-xs font-bold text-blue-400 hover:underline flex items-center gap-1 flex-shrink-0">
+                        <span>Explore</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
                 </div>
 
-                <div className="rooms-list">
-                    {loading ? (
-                        <div className="text-sm text-gray-500">Loading rooms...</div>
+                <div className="space-y-3">
+                    {loadingRooms ? (
+                        <div className="space-y-2">
+                            {[1, 2].map(i => (
+                                <div key={i} className="h-16 rounded-xl bg-[#242424] skeleton-shimmer" />
+                            ))}
+                        </div>
                     ) : rooms.length === 0 ? (
-                        <div className="text-sm text-gray-500">No upcoming rooms. Create one!</div>
+                        <div className="p-4 rounded-xl bg-[#242424] border border-dashed border-[rgba(255,255,255,0.08)] text-center space-y-2">
+                            <BookOpen className="w-6 h-6 text-blue-400 mx-auto opacity-70" />
+                            <p className="text-xs font-bold text-white">No active rooms right now</p>
+                            <p className="text-[11px] text-[#a0a0a0] font-medium">Create a room & invite friends!</p>
+                        </div>
                     ) : (
                         rooms.slice(0, 3).map((room) => (
-                            <div key={room.id} className="meet-item glass cursor-pointer hover:border-primary transition-colors">
-                                <div className="meet-info">
-                                    <h5 className="truncate max-w-[160px]">{room.topic}</h5>
-                                    <span className="flex items-center gap-1">
-                                        <div className="avatar-small w-4 h-4 text-[10px] inline-flex mr-1">{room.hostInitials}</div>
-                                        {room.hostName.split(' ')[0]} • {room.scheduleTime}
+                            <div
+                                key={room.id}
+                                className="p-3 rounded-xl bg-[#242424] border border-[rgba(255,255,255,0.08)] hover:border-blue-500/40 transition-all space-y-1.5"
+                            >
+                                <div className="flex items-center justify-between gap-2">
+                                    <h4 className="text-xs font-bold text-white truncate">{room.topic}</h4>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex-shrink-0">
+                                        Live
                                     </span>
                                 </div>
-                                <a href={room.meetLink} target="_blank" rel="noreferrer" className="btn-join no-underline">Join</a>
+                                <div className="flex items-center justify-between text-[11px] text-[#a0a0a0] font-medium gap-2">
+                                    <span className="truncate">Host: {room.hostName}</span>
+                                    <span className="flex-shrink-0">{room.scheduleTime}</span>
+                                </div>
                             </div>
                         ))
                     )}

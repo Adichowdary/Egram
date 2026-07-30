@@ -8,10 +8,11 @@ import { RightSidebar } from "@/components/RightSidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { CreateMeetModal } from "@/components/CreateMeetModal";
 import { CreatePostModal } from "@/components/CreatePostModal";
+import { CreateStoryModal } from "@/components/CreateStoryModal";
 import { SplashScreen } from "@/components/SplashScreen";
 import { useToast } from "@/components/ToastProvider";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Plus, Check, Search } from "lucide-react";
+import { Users, Plus, Check, Search, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Circle {
@@ -29,6 +30,7 @@ export default function CirclesPage() {
     const [loading, setLoading] = useState(!(typeof window !== "undefined" && auth?.currentUser));
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+    const [isStoryModalOpen, setIsStoryModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [activeCategory, setActiveCategory] = useState("All");
     const [circles, setCircles] = useState<Circle[]>([]);
@@ -41,7 +43,6 @@ export default function CirclesPage() {
             if (currentUser) {
                 setUser(currentUser);
                 try {
-                    // Query real groups/circles from DB
                     const res = await fetch(`/api/groups`);
                     if (res.ok) {
                         const data = await res.json();
@@ -112,46 +113,46 @@ export default function CirclesPage() {
                         getInitials={getInitials}
                     />
 
-                    <main className="main-content flex-col items-center px-4 py-8">
-                        <div className="w-full max-w-[620px] mx-auto space-y-6">
-
-                            {/* Header */}
+                    <main className="main-content">
+                        <div className="feed-column space-y-6">
+                            
+                            {/* Page Header */}
                             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-                                <div className="flex items-center gap-3 mb-2">
+                                <div className="flex items-center gap-3">
                                     <div className="p-3 rounded-2xl bg-pink-500/10 text-pink-500 border border-pink-500/20">
                                         <Users className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <h1 className="text-3xl font-black tracking-tight">Egram Circles</h1>
+                                        <h1 className="text-2xl font-black tracking-tight">Student Circles</h1>
                                         <p className="text-xs text-[var(--text-light)] font-medium">
-                                            Student communities, subject groups & campus hubs
+                                            Join subject communities, study groups, and project hubs
                                         </p>
                                     </div>
                                 </div>
                             </motion.div>
 
-                            {/* Search & Category Filter */}
-                            <div className="space-y-4">
+                            {/* Search & Category Pills */}
+                            <div className="space-y-3">
                                 <div className="relative">
-                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                                    <Search className="w-4 h-4 text-[var(--text-light)] absolute left-4 top-1/2 -translate-y-1/2" />
                                     <input
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder="Search student circles by topic or interest..."
-                                        className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-[var(--card-bg)] border border-[var(--card-border)] text-sm font-medium focus:outline-none focus:border-[var(--primary)]"
+                                        placeholder=""
+                                        className="w-full bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl pl-11 pr-4 py-3 text-xs sm:text-sm text-[var(--text-dark)] placeholder:text-[var(--text-light)] focus:outline-none focus:border-indigo-500 transition-all shadow-xs"
                                     />
                                 </div>
 
-                                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+                                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
                                     {categories.map((cat) => (
                                         <button
                                             key={cat}
                                             onClick={() => setActiveCategory(cat)}
-                                            className={`px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all ${
+                                            className={`py-2 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                                                 activeCategory === cat
-                                                    ? "bg-[var(--primary)] text-white shadow-lg shadow-purple-500/20"
-                                                    : "bg-[var(--accent-bg)] text-zinc-400 border border-[var(--card-border)] hover:text-white"
+                                                    ? "bg-indigo-500 text-white shadow-md"
+                                                    : "bg-[var(--card-bg)] border border-[var(--card-border)] text-[var(--text-light)] hover:text-[var(--text-dark)]"
                                             }`}
                                         >
                                             {cat}
@@ -163,48 +164,54 @@ export default function CirclesPage() {
                             {/* Circles Grid */}
                             <div className="space-y-4">
                                 {filteredCircles.length === 0 ? (
-                                    <div className="text-center py-16 rounded-3xl border border-dashed border-[var(--card-border)] bg-[var(--accent-bg)]">
-                                        <Users className="w-10 h-10 mx-auto text-zinc-500 opacity-40 mb-2" />
-                                        <p className="text-sm font-bold">No circles found</p>
-                                        <p className="text-xs text-[var(--text-light)]">No student communities created yet.</p>
+                                    <div className="glass-card p-8 text-center border border-dashed border-[var(--card-border)] rounded-3xl space-y-2">
+                                        <Sparkles className="w-8 h-8 text-indigo-500 mx-auto opacity-60" />
+                                        <p className="text-sm font-black text-[var(--text-dark)]">No circles found</p>
+                                        <p className="text-xs text-[var(--text-light)]">Try searching with a different term or category!</p>
                                     </div>
                                 ) : (
                                     filteredCircles.map((circle) => (
                                         <motion.div
                                             key={circle.id}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="glass rounded-3xl p-5 border border-[var(--card-border)] flex items-center justify-between gap-4 shadow-xl hover:border-purple-500/30 transition-all"
+                                            whileHover={{ y: -2 }}
+                                            className="glass-card p-5 border border-[var(--card-border)] rounded-3xl transition-all shadow-sm hover:shadow-md flex items-center justify-between gap-4"
                                         >
-                                            <div className="flex items-start gap-4 min-w-0">
-                                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600/20 to-pink-600/20 border border-purple-500/30 flex items-center justify-center text-2xl flex-shrink-0">
+                                            <div className="flex items-start gap-3.5 min-w-0">
+                                                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 flex items-center justify-center font-black text-xl flex-shrink-0">
                                                     {circle.icon}
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <div className="flex items-center gap-2">
-                                                        <h3 className="font-black text-base truncate">{circle.name}</h3>
-                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                                                            {circle.category}
-                                                        </span>
+
+                                                <div className="flex flex-col min-w-0">
+                                                    <h3 className="text-sm font-extrabold text-[var(--text-dark)] truncate">{circle.name}</h3>
+                                                    <p className="text-xs text-[var(--text-light)] line-clamp-1 mt-0.5">{circle.description}</p>
+                                                    
+                                                    <div className="flex items-center gap-2 mt-2 text-[11px] text-[var(--text-light)] font-bold">
+                                                        <span className="px-2 py-0.5 rounded-full bg-[var(--accent-bg)] border border-[var(--card-border)]">{circle.category}</span>
+                                                        <span>•</span>
+                                                        <span>{circle.membersCount} members</span>
                                                     </div>
-                                                    <p className="text-xs text-[var(--text-light)] font-medium line-clamp-2 mt-1">
-                                                        {circle.description}
-                                                    </p>
-                                                    <p className="text-[11px] font-bold text-zinc-400 mt-2">
-                                                        👥 {circle.membersCount.toLocaleString()} Members
-                                                    </p>
                                                 </div>
                                             </div>
 
                                             <button
                                                 onClick={() => toggleJoinCircle(circle.id)}
-                                                className={`flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-black transition-all active:scale-95 flex-shrink-0 ${
+                                                className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
                                                     circle.isJoined
-                                                        ? "bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700"
-                                                        : "bg-[var(--primary)] text-white hover:opacity-90 shadow-lg shadow-purple-500/30"
+                                                        ? "bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)]"
+                                                        : "bg-indigo-500 text-white shadow-md hover:bg-indigo-600"
                                                 }`}
                                             >
-                                                {circle.isJoined ? <><Check className="w-4 h-4" /> Joined</> : <><Plus className="w-4 h-4" /> Join</>}
+                                                {circle.isJoined ? (
+                                                    <>
+                                                        <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                                        <span>Joined</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Plus className="w-3.5 h-3.5" />
+                                                        <span>Join</span>
+                                                    </>
+                                                )}
                                             </button>
                                         </motion.div>
                                     ))
@@ -212,13 +219,40 @@ export default function CirclesPage() {
                             </div>
 
                         </div>
+
+                        <RightSidebar
+                            user={user}
+                            handleSignOut={() => auth.signOut().then(() => router.push("/login"))}
+                            getInitials={getInitials}
+                        />
                     </main>
 
-                    <RightSidebar user={user} handleSignOut={() => auth.signOut()} getInitials={getInitials} />
-                    <MobileNav onOpenCreatePost={() => setIsPostModalOpen(true)} onOpenCreateMeet={() => setIsModalOpen(true)} currentUserId={user.uid} />
+                    <MobileNav
+                        onOpenCreatePost={() => setIsPostModalOpen(true)}
+                        onOpenCreateMeet={() => setIsModalOpen(true)}
+                        onOpenCreateStory={() => setIsStoryModalOpen(true)}
+                        currentUserId={user.uid}
+                    />
 
-                    <CreateMeetModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} user={user} getInitials={getInitials} />
-                    <CreatePostModal isOpen={isPostModalOpen} onClose={() => setIsPostModalOpen(false)} user={user} />
+                    <CreateMeetModal
+                        isOpen={isModalOpen}
+                        onClose={() => setIsModalOpen(false)}
+                        user={user}
+                        getInitials={getInitials}
+                    />
+
+                    <CreatePostModal
+                        isOpen={isPostModalOpen}
+                        onClose={() => setIsPostModalOpen(false)}
+                        user={user}
+                    />
+
+                    <CreateStoryModal
+                        isOpen={isStoryModalOpen}
+                        onClose={() => setIsStoryModalOpen(false)}
+                        currentUser={user}
+                        onStoryCreated={() => window.dispatchEvent(new Event("userProfileUpdated"))}
+                    />
                 </div>
             )}
         </>
