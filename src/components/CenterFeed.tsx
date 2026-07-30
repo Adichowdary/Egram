@@ -75,10 +75,10 @@ export function CenterFeed({ user }: CenterFeedProps) {
             {/* 1. 24h Stories Bar Widget */}
             <StoriesBar currentUser={user} getInitials={getInitials} />
 
-            {/* 2. Quick Post Composer Widget */}
+            {/* 2. Quick Post Composer Widget - 46px+ Touch Target Action Buttons */}
             <div className="glass-card p-4 sm:p-5 border rounded-2xl shadow-md space-y-4" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
                 <div className="flex items-center gap-3.5">
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden border border-blue-500/40 p-0.5 flex-shrink-0">
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full overflow-hidden border border-blue-500/40 p-0.5 flex-shrink-0">
                         {user.photoURL ? (
                             <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover rounded-full" />
                         ) : (
@@ -90,43 +90,43 @@ export function CenterFeed({ user }: CenterFeedProps) {
 
                     <button
                         onClick={() => setIsPostModalOpen(true)}
-                        className="flex-1 border text-left px-4 py-3 rounded-full text-xs sm:text-sm font-medium transition-all cursor-pointer truncate"
+                        className="flex-1 border text-left px-4.5 py-3.5 rounded-full text-xs sm:text-sm font-medium transition-all cursor-pointer truncate min-h-[46px]"
                         style={{ backgroundColor: "var(--accent-bg)", borderColor: "var(--card-border)", color: "var(--text-light)" }}
                     >
                         Share a study update, code snippet, or thought...
                     </button>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 pt-3 border-t text-xs font-bold" style={{ borderColor: "var(--card-border)", color: "var(--text-light)" }}>
+                <div className="grid grid-cols-3 gap-2.5 pt-3 border-t text-xs font-bold" style={{ borderColor: "var(--card-border)", color: "var(--text-light)" }}>
                     <button
                         onClick={() => setIsPostModalOpen(true)}
-                        className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl border transition-all cursor-pointer truncate"
+                        className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border transition-all cursor-pointer truncate min-h-[46px]"
                         style={{ backgroundColor: "var(--accent-bg)", borderColor: "var(--card-border)" }}
                     >
-                        <ImageIcon className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                        <ImageIcon className="w-5 h-5 text-emerald-500 flex-shrink-0" />
                         <span className="truncate">Add Media</span>
                     </button>
 
                     <button
                         onClick={() => setIsMeetModalOpen(true)}
-                        className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl border transition-all cursor-pointer truncate"
+                        className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border transition-all cursor-pointer truncate min-h-[46px]"
                         style={{ backgroundColor: "var(--accent-bg)", borderColor: "var(--card-border)" }}
                     >
-                        <Video className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                        <Video className="w-5 h-5 text-blue-500 flex-shrink-0" />
                         <span className="truncate">Study Room</span>
                     </button>
 
                     <button
                         onClick={() => setIsPostModalOpen(true)}
-                        className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-blue-500 text-white hover:bg-blue-600 shadow-md transition-all cursor-pointer truncate"
+                        className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-blue-500 text-white hover:bg-blue-600 shadow-md transition-all cursor-pointer truncate min-h-[46px]"
                     >
-                        <Sparkles className="w-4 h-4 flex-shrink-0" />
+                        <Sparkles className="w-5 h-5 flex-shrink-0" />
                         <span className="truncate">Publish</span>
                     </button>
                 </div>
             </div>
 
-            {/* 3. Global Streak Leaderboard Widget - 84px Column Slot Sizing */}
+            {/* 3. Global Streak Leaderboard Widget - 90px Column Slot Sizing */}
             <div className="glass-card p-4 sm:p-5 border rounded-2xl shadow-md space-y-3" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
                 <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-2">
@@ -142,7 +142,7 @@ export function CenterFeed({ user }: CenterFeedProps) {
                     <div className="flex items-center gap-4 min-w-max px-1">
                         {loadingStreak ? (
                             [1, 2, 3, 4, 5].map(i => (
-                                <div key={i} className="w-20 h-20 rounded-xl skeleton-shimmer" style={{ backgroundColor: "var(--accent-bg)" }} />
+                                <div key={i} className="w-22 h-22 rounded-xl skeleton-shimmer" style={{ backgroundColor: "var(--accent-bg)" }} />
                             ))
                         ) : streakLeaderboard.length > 0 ? (
                             streakLeaderboard.slice(0, 10).map((item, index) => {
@@ -166,9 +166,9 @@ export function CenterFeed({ user }: CenterFeedProps) {
                                 }
 
                                 return (
-                                    <Link key={item.firebaseUid || index} href={`/profile/${item.firebaseUid}`} className="relative group flex flex-col items-center gap-1.5 min-w-[84px] max-w-[88px]">
+                                    <Link key={item.firebaseUid || index} href={`/profile/${item.firebaseUid}`} className="relative group flex flex-col items-center gap-1.5 min-w-[90px] max-w-[94px]">
                                         <div className="relative">
-                                            <div className={`w-13 h-13 rounded-full border-2 p-0.5 transition-all group-hover:scale-105 shadow-sm ${borderGradient}`}>
+                                            <div className={`w-14 h-14 rounded-full border-2 p-0.5 transition-all group-hover:scale-105 shadow-sm ${borderGradient}`}>
                                                 <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center font-bold text-xs" style={{ backgroundColor: "var(--accent-bg)", color: "var(--primary)" }}>
                                                     {item.avatarUrl ? (
                                                         <img src={item.avatarUrl} alt={item.name} className="w-full h-full object-cover" />
@@ -179,7 +179,7 @@ export function CenterFeed({ user }: CenterFeedProps) {
                                             </div>
 
                                             {isOnline && (
-                                                <div className="absolute top-0 right-0 w-3 h-3 bg-emerald-500 border-2 rounded-full z-20" style={{ borderColor: "var(--card-bg)" }} />
+                                                <div className="absolute top-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 rounded-full z-20" style={{ borderColor: "var(--card-bg)" }} />
                                             )}
                                         </div>
 
@@ -205,14 +205,14 @@ export function CenterFeed({ user }: CenterFeedProps) {
             </div>
 
             {/* 4. Trending Topics Bar Widget */}
-            <div className="glass-card p-3.5 border rounded-xl flex items-center justify-between gap-3 overflow-x-auto no-scrollbar" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+            <div className="glass-card p-4 border rounded-xl flex items-center justify-between gap-3 overflow-x-auto no-scrollbar" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                    <TrendingUp className="w-4 h-4 text-blue-500" />
+                    <TrendingUp className="w-5 h-5 text-blue-500" />
                     <span className="text-xs font-bold uppercase" style={{ color: "var(--text-light)" }}>Trending Topics:</span>
                 </div>
                 <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
                     {trendingTags.map((tag) => (
-                        <Link key={tag} href={`/search?q=${encodeURIComponent(tag.replace('#', ''))}`} className="px-2.5 py-1 rounded-lg border text-xs font-bold text-blue-500 transition-all flex-shrink-0" style={{ backgroundColor: "var(--accent-bg)", borderColor: "var(--card-border)" }}>
+                        <Link key={tag} href={`/search?q=${encodeURIComponent(tag.replace('#', ''))}`} className="px-3 py-1.5 rounded-lg border text-xs font-bold text-blue-500 transition-all flex-shrink-0" style={{ backgroundColor: "var(--accent-bg)", borderColor: "var(--card-border)" }}>
                             {tag}
                         </Link>
                     ))}
@@ -231,7 +231,7 @@ export function CenterFeed({ user }: CenterFeedProps) {
                         }`}
                         style={{ color: feedType === "global" ? "#ffffff" : "var(--text-light)" }}
                     >
-                        <Compass className="w-3.5 h-3.5" />
+                        <Compass className="w-4 h-4" />
                         <span>Explore Feed</span>
                     </button>
 
@@ -244,7 +244,7 @@ export function CenterFeed({ user }: CenterFeedProps) {
                         }`}
                         style={{ color: feedType === "following" ? "#ffffff" : "var(--text-light)" }}
                     >
-                        <Users className="w-3.5 h-3.5" />
+                        <Users className="w-4 h-4" />
                         <span>Following</span>
                     </button>
                 </div>
