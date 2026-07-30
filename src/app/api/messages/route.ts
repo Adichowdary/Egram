@@ -35,13 +35,11 @@ export async function POST(req: Request) {
             }
         }
 
-        // 1. Create in MongoDB (if connected)
         let newMessage = null;
         if (db) {
             newMessage = await Message.create({ senderId, receiverId, groupId, content: finalContent, mediaUrl, mediaType });
         }
 
-        // 2. Dual-sync to Supabase for Realtime WebSockets delivery
         if (isSupabaseConfigured()) {
             sendSupabaseMessage({
                 senderId,
@@ -53,7 +51,6 @@ export async function POST(req: Request) {
             }).catch(err => console.error("Error syncing message to Supabase:", err));
         }
 
-        // Asynchronous non-blocking notifications for speed
         if (db) {
             if (groupId) {
                 Group.findById(groupId).select('memberIds name').lean().then(group => {
@@ -101,20 +98,19 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
         }
 
-        // 1. Parallel MongoDB Query
         const mongoPromise = (async () => {
             try {
                 const db = await connectMongo();
                 if (!db) return [];
                 if (groupId) {
-                    return await Message.find({ groupId }).sort({ createdAt: 1 }).lean();
+                    return await Message.find({ groupId }).sort({ createdAt: 1 }).limit(100).lean();
                 } else {
                     return await Message.find({
                         $or: [
                             { senderId: user1, receiverId: user2 },
                             { senderId: user2, receiverId: user1 }
                         ]
-                    }).sort({ createdAt: 1 }).lean();
+                    }).sort({ createdAt: 1 }).limit(100).lean();
                 }
             } catch (err) {
                 console.error("Mongo fetch error:", err);
@@ -122,12 +118,10 @@ export async function GET(req: Request) {
             }
         })();
 
-        // 2. Parallel Supabase Query
         const supaPromise = isSupabaseConfigured()
             ? fetchSupabaseMessages({ user1, user2, groupId }).catch(() => [])
             : Promise.resolve([]);
 
-        // Execute concurrently to eliminate sequential waiting
         const [supaRes, mongoRes] = await Promise.all([supaPromise, mongoPromise]);
 
         if (supaRes && supaRes.length > 0) {
@@ -142,13 +136,18 @@ export async function GET(req: Request) {
                 isRead: m.is_read,
                 createdAt: m.created_at
             }));
-            return NextResponse.json({ success: true, data: formatted }, { status: 200 });
+            return NextResponse.json({ success: true, data: formatted }, { 
+                status: 200,
+                headers: { 'Cache-Control': 'public, s-maxage=2, stale-while-revalidate=10' }
+            });
         }
 
-        return NextResponse.json({ success: true, data: mongoRes || [] }, { status: 200 });
+        return NextResponse.json({ success: true, data: mongoRes || [] }, { 
+            status: 200,
+            headers: { 'Cache-Control': 'public, s-maxage=2, stale-while-revalidate=10' }
+        });
     } catch (error) {
         console.error("Error fetching messages:", error);
         return NextResponse.json({ success: true, data: [] }, { status: 200 });
     }
 }
-
