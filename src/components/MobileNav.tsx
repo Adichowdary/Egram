@@ -45,10 +45,10 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
 
     return (
         <>
-            {/* 1. Mobile Top Glass Header - 24px Icons & 44px+ Hitboxes */}
-            <header className="md:hidden fixed top-0 left-0 right-0 z-40 glass-header px-4 py-3 flex items-center justify-between shadow-sm">
+            {/* 1. Mobile Top Glass Header - Strict Vertical Centerline Alignment */}
+            <header className="md:hidden fixed top-0 left-0 right-0 z-40 glass-header px-4 h-14 flex items-center justify-between shadow-sm">
                 <Link href="/" className="flex items-center gap-2">
-                    <span className="text-2xl font-black tracking-tight bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                    <span className="text-2xl font-black tracking-tight leading-none bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
                         Egram.
                     </span>
                 </Link>
@@ -57,7 +57,7 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
                     {onOpenCreatePost && (
                         <button
                             onClick={onOpenCreatePost}
-                            className="p-3 rounded-full text-blue-500 hover:bg-blue-500/20 active:scale-95 transition-all cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center"
+                            className="p-2.5 rounded-full text-blue-500 hover:bg-blue-500/20 active:scale-95 transition-all cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center"
                             style={{ backgroundColor: "var(--primary-bg)" }}
                             aria-label="Create Post"
                         >
@@ -67,7 +67,7 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
 
                     <button
                         onClick={() => setIsNotificationsOpen(true)}
-                        className="p-3 rounded-full border hover:opacity-80 active:scale-95 transition-all relative cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center"
+                        className="p-2.5 rounded-full border hover:opacity-80 active:scale-95 transition-all relative cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center"
                         style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)", color: "var(--text-dark)" }}
                         aria-label="Notifications"
                     >
@@ -77,7 +77,7 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
 
                     <Link
                         href="/messages"
-                        className="p-3 rounded-full border hover:opacity-80 active:scale-95 transition-all cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center"
+                        className="p-2.5 rounded-full border hover:opacity-80 active:scale-95 transition-all cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center"
                         style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)", color: "var(--text-dark)" }}
                         aria-label="Messages"
                     >
@@ -86,7 +86,7 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
                 </div>
             </header>
 
-            {/* 2. Floating Bottom Glass Navigation Bar - 24px Icons & 52px Hitboxes */}
+            {/* 2. Floating Bottom Glass Navigation Bar */}
             <div className="md:hidden fixed bottom-4 left-4 right-4 z-40">
                 <nav className="glass-nav rounded-full px-4 py-2 flex items-center justify-between shadow-2xl border backdrop-blur-2xl" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
                     {navTabs.map((tab) => {
@@ -144,7 +144,7 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
                 user={auth?.currentUser || null} 
             />
 
-            {/* Bottom Sheet Drawer for "Menu & Options" - Spacious Touch Targets */}
+            {/* Bottom Sheet Drawer for "Menu & Options" */}
             <AnimatePresence>
                 {isMoreOpen && (
                     <>
@@ -218,7 +218,7 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
                                 </button>
                             </div>
 
-                            {/* 2x2 Navigation Cards Grid - 56px Touch Target Cards */}
+                            {/* 2x2 Navigation Cards Grid */}
                             <div className="grid grid-cols-2 gap-3.5 pt-1">
                                 {gridItems.map((item) => {
                                     const Icon = item.icon;
@@ -246,7 +246,7 @@ export function MobileNav({ onOpenCreatePost, onOpenCreateMeet, onOpenCreateStor
                                 })}
                             </div>
 
-                            {/* Settings Row - 56px Touch Target */}
+                            {/* Settings Row */}
                             <Link
                                 href="/settings"
                                 onClick={() => setIsMoreOpen(false)}

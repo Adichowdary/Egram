@@ -36,12 +36,12 @@ export default function SearchPage() {
 
     return (
         <div className="feed-column space-y-6">
-            {/* Header & Search Bar - Enlarged Touch Target Input */}
-            <div className="glass-card p-5 sm:p-6 border rounded-2xl shadow-md space-y-4" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+            {/* Header & Search Bar - Generous Vertical Spacing & Shifted Search Icon */}
+            <div className="glass-card p-5 sm:p-6 border rounded-2xl shadow-md space-y-5" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight" style={{ color: "var(--text-dark)" }}>Search Egram</h1>
                 
                 <div className="relative flex items-center">
-                    <Search className="w-5.5 h-5.5 absolute left-4 text-slate-400 pointer-events-none" />
+                    <Search className="w-5.5 h-5.5 absolute left-4 text-slate-400 pointer-events-none z-10" />
                     <input
                         type="text"
                         value={query}
@@ -52,8 +52,8 @@ export default function SearchPage() {
                     />
                 </div>
 
-                {/* Filter Chips */}
-                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1">
+                {/* Filter Chips - Uniform Horizontal Padding & Full Contrast */}
+                <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar pt-1">
                     {[
                         { id: "all", label: "All Results" },
                         { id: "users", label: "Students" },
@@ -62,15 +62,15 @@ export default function SearchPage() {
                         <button
                             key={tab.id}
                             onClick={() => setActiveFilter(tab.id as any)}
-                            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border transition-all cursor-pointer flex-shrink-0 ${
+                            className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold border transition-all cursor-pointer flex-shrink-0 min-w-max ${
                                 activeFilter === tab.id
-                                    ? "bg-blue-500 text-white border-blue-500"
+                                    ? "bg-blue-500 text-white border-blue-500 shadow-sm"
                                     : ""
                             }`}
                             style={{
                                 backgroundColor: activeFilter === tab.id ? undefined : "var(--accent-bg)",
                                 borderColor: activeFilter === tab.id ? undefined : "var(--card-border)",
-                                color: activeFilter === tab.id ? "#ffffff" : "var(--text-light)",
+                                color: activeFilter === tab.id ? "#ffffff" : "var(--text-dark)",
                             }}
                         >
                             {tab.label}
@@ -79,7 +79,7 @@ export default function SearchPage() {
                 </div>
             </div>
 
-            {/* Results Grid */}
+            {/* Results & Empty State Container */}
             <div className="space-y-3">
                 {loading ? (
                     <div className="p-8 text-center text-sm font-bold flex items-center justify-center gap-2" style={{ color: "var(--text-light)" }}>
@@ -88,16 +88,18 @@ export default function SearchPage() {
                     </div>
                 ) : results.length === 0 ? (
                     query.trim() ? (
-                        <div className="glass-card p-8 border rounded-2xl text-center space-y-2" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
-                            <Compass className="w-8 h-8 text-slate-400 mx-auto opacity-60" />
-                            <p className="text-sm sm:text-base font-bold" style={{ color: "var(--text-dark)" }}>No results found for "{query}"</p>
+                        <div className="glass-card p-8 sm:p-10 border rounded-2xl flex flex-col items-center justify-center text-center space-y-3" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+                            <Compass className="w-8 h-8 sm:w-10 sm:h-10 text-slate-400 opacity-60" />
+                            <p className="text-base sm:text-lg font-bold" style={{ color: "var(--text-dark)" }}>No results found for "{query}"</p>
                             <p className="text-xs sm:text-sm font-medium" style={{ color: "var(--text-light)" }}>Try searching for a different keyword or student name.</p>
                         </div>
                     ) : (
-                        <div className="glass-card p-8 border rounded-2xl text-center space-y-2" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
-                            <Search className="w-8 h-8 text-blue-500 mx-auto opacity-60" />
-                            <p className="text-sm sm:text-base font-bold" style={{ color: "var(--text-dark)" }}>Type to search across Egram</p>
-                            <p className="text-xs sm:text-sm font-medium" style={{ color: "var(--text-light)" }}>Find classmates, machine learning study rooms, and topics.</p>
+                        <div className="glass-card p-8 sm:p-10 border rounded-2xl flex flex-col items-center justify-center text-center space-y-3" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+                            <Search className="w-8 h-8 sm:w-10 sm:h-10 text-blue-500 opacity-70" />
+                            <p className="text-base sm:text-lg font-black" style={{ color: "var(--text-dark)" }}>Search across Egram</p>
+                            <p className="text-xs sm:text-sm font-medium max-w-sm" style={{ color: "var(--text-dark)", opacity: 0.85 }}>
+                                Find classmates, machine learning study rooms, and trending topics.
+                            </p>
                         </div>
                     )
                 ) : (
@@ -130,7 +132,7 @@ export default function SearchPage() {
                                 </div>
                             </div>
 
-                            <span className="px-3.5 py-1.5 rounded-full border text-xs font-bold text-blue-500 flex-shrink-0" style={{ backgroundColor: "var(--accent-bg)", borderColor: "var(--card-border)" }}>
+                            <span className="px-4 py-2 rounded-full border text-xs font-bold text-blue-500 flex-shrink-0" style={{ backgroundColor: "var(--accent-bg)", borderColor: "var(--card-border)" }}>
                                 View Profile
                             </span>
                         </Link>

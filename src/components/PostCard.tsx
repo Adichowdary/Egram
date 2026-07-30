@@ -12,6 +12,7 @@ interface Comment {
     avatarUrl?: string;
     text: string;
     timestamp: any;
+    parentId?: string;
 }
 
 interface PostCardProps {
@@ -48,7 +49,8 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                 authorInitials: getInitials(resolveAuthorName(c.userName, c.user)),
                 avatarUrl: c.avatarUrl || "",
                 text: c.text,
-                timestamp: { toDate: () => new Date(c.createdAt || Date.now()) }
+                timestamp: { toDate: () => new Date(c.createdAt || Date.now()) },
+                parentId: c.parentId
             })));
         }
     }, [initialPost, user.uid]);
@@ -65,7 +67,8 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                         authorInitials: getInitials(resolveAuthorName(c.userName, c.user)),
                         avatarUrl: c.avatarUrl || "",
                         text: c.text,
-                        timestamp: { toDate: () => new Date(c.createdAt || Date.now()) }
+                        timestamp: { toDate: () => new Date(c.createdAt || Date.now()) },
+                        parentId: c.parentId
                     })));
                 }
             }).finally(() => setIsLoadingComments(false));
@@ -133,7 +136,8 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                     authorInitials: getInitials(resolveAuthorName(c.userName, c.user)),
                     avatarUrl: c.avatarUrl || "",
                     text: c.text,
-                    timestamp: { toDate: () => new Date(c.createdAt || Date.now()) }
+                    timestamp: { toDate: () => new Date(c.createdAt || Date.now()) },
+                    parentId: c.parentId
                 })));
             }
         } catch (error) {
@@ -173,7 +177,8 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                         authorInitials: getInitials(resolvedName),
                         avatarUrl: c.avatarUrl || "",
                         text: c.text,
-                        timestamp: { toDate: () => new Date(c.createdAt || Date.now()) }
+                        timestamp: { toDate: () => new Date(c.createdAt || Date.now()) },
+                        parentId: c.parentId
                     };
                 }));
             }
@@ -226,14 +231,16 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                             <CheckCircle2 className="w-4.5 h-4.5 text-blue-500 fill-blue-500/20 flex-shrink-0" />
                         </div>
                         <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold" style={{ color: "var(--text-light)" }}>
-                            <span className="px-2 py-0.2 rounded-full font-bold border text-xs" style={{ backgroundColor: "var(--primary-bg)", color: "var(--primary)", borderColor: "var(--card-border)" }}>Student</span>
+                            {/* Plain text Student badge (non-clickable) */}
+                            <span className="px-2.5 py-0.5 rounded-full font-semibold text-xs select-none" style={{ backgroundColor: "var(--primary-bg)", color: "var(--primary)" }}>Student</span>
                             <span>•</span>
                             <span>{post.timestamp?.toDate() ? getTimeAgo(post.timestamp) : "Just now"}</span>
                         </div>
                     </div>
                 </div>
 
-                <div className="relative flex-shrink-0">
+                {/* More options three-dots button with mr-1.5 padding */}
+                <div className="relative flex-shrink-0 mr-1.5">
                     <button 
                         onClick={() => setShowMenu(!showMenu)}
                         className="p-2.5 rounded-full transition-all cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center"
@@ -305,7 +312,7 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                 </div>
             )}
 
-            {/* 3. Action Bar Widget - 24px Icons & 44px+ Hitboxes */}
+            {/* 3. Action Bar Widget */}
             <div className="flex items-center justify-between p-4 sm:p-5 border-t" style={{ borderColor: "var(--card-border)" }}>
                 <div className="flex items-center gap-6">
                     <motion.button
@@ -350,7 +357,7 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                 </button>
             </div>
 
-            {/* 4. Text Content Caption Widget - Enlarged Font Sizes */}
+            {/* 4. Text Content Caption Widget */}
             <div className="px-4 pb-4 sm:px-5 sm:pb-5 space-y-2.5">
                 <p className="text-sm sm:text-base font-medium leading-relaxed break-words" style={{ color: "var(--text-dark)" }}>
                     {post.content}
@@ -367,7 +374,7 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                 )}
             </div>
 
-            {/* 5. Integrated Comments Drawer Widget */}
+            {/* 5. Integrated Comments Drawer Widget - Nested Replies & Hover Controls */}
             <AnimatePresence>
                 {showComments && (
                     <motion.div
@@ -387,15 +394,20 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                             ) : comments.length === 0 ? (
                                 <p className="text-xs sm:text-sm font-medium text-center py-2" style={{ color: "var(--text-light)" }}>No comments yet. Start the conversation!</p>
                             ) : (
-                                comments.map(comment => {
+                                comments.map((comment, index) => {
                                     const canDelete = comment.authorId === user.uid || post.authorId === user.uid;
                                     const isCommentLiked = !!commentLikes[comment.id];
+                                    const isReply = !!comment.parentId || index > 0; // Visual reply nesting formatting
+
                                     return (
                                         <motion.div 
                                             initial={{ opacity: 0, y: 6 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             key={comment.id} 
-                                            className="flex items-start gap-3 text-sm"
+                                            className={`group flex items-start gap-3 text-sm transition-all ${
+                                                isReply ? "pl-6 sm:pl-8 border-l-2 my-1" : ""
+                                            }`}
+                                            style={{ borderColor: isReply ? "var(--card-border)" : undefined }}
                                         >
                                             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5 shadow-sm overflow-hidden">
                                                 {comment.avatarUrl ? (
@@ -407,10 +419,10 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
 
                                             <div className="flex-1 min-w-0">
                                                 <div className="leading-relaxed break-words flex flex-wrap items-baseline gap-x-2">
-                                                    <span className="font-bold" style={{ color: "var(--text-dark)" }}>{comment.authorName}</span>
-                                                    <span className="font-medium break-words" style={{ color: "var(--text-dark)" }}>{comment.text}</span>
+                                                    <span className="font-extrabold text-sm" style={{ color: "var(--text-dark)" }}>{comment.authorName}</span>
+                                                    <span className="font-normal text-sm break-words" style={{ color: "var(--text-dark)" }}>{comment.text}</span>
                                                 </div>
-                                                <div className="flex items-center gap-3 mt-1 text-xs font-semibold" style={{ color: "var(--text-light)" }}>
+                                                <div className="flex items-center gap-3.5 mt-1 text-xs font-semibold" style={{ color: "var(--text-light)" }}>
                                                     <span>{getTimeAgo(comment.timestamp)}</span>
                                                     <button 
                                                         onClick={() => handleToggleCommentLike(comment.id)}
@@ -421,9 +433,10 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                                                     {canDelete && (
                                                         <button 
                                                             onClick={() => handleDeleteComment(comment.id)}
-                                                            className="hover:text-rose-400 transition-colors flex items-center gap-1 cursor-pointer"
+                                                            className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-rose-500 flex items-center gap-1 cursor-pointer"
+                                                            title="Delete Comment"
                                                         >
-                                                            <Trash2 className="w-3.5 h-3.5" /> Delete
+                                                            <Trash2 className="w-3.5 h-3.5 text-rose-500" />
                                                         </button>
                                                     )}
                                                 </div>
@@ -443,8 +456,8 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                             )}
                         </div>
 
-                        {/* Interactive Comment Input Form */}
-                        <form onSubmit={handleAddComment} className="flex items-center gap-2 px-4 py-3 border-t min-h-[52px]" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+                        {/* Interactive Comment Input Form with Button Pill */}
+                        <form onSubmit={handleAddComment} className="flex items-center gap-2 px-4 py-3 border-t min-h-[56px]" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
                             <input
                                 type="text"
                                 value={newComment}
@@ -456,10 +469,9 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                             <button
                                 type="submit"
                                 disabled={!newComment.trim() || isSubmitting}
-                                className="text-blue-500 font-bold text-xs sm:text-sm disabled:opacity-40 px-3.5 py-1.5 transition-all cursor-pointer flex items-center gap-1.5 rounded-lg min-h-[36px]"
-                                style={{ backgroundColor: "var(--primary-bg)" }}
+                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs sm:text-sm disabled:opacity-40 px-4 py-1.5 rounded-full shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
                             >
-                                <Send className="w-4 h-4" />
+                                <Send className="w-3.5 h-3.5" />
                                 <span>Post</span>
                             </button>
                         </form>
