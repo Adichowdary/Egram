@@ -75,7 +75,7 @@ export function CenterFeed({ user }: CenterFeedProps) {
             {/* 1. 24h Stories Bar Widget */}
             <StoriesBar currentUser={user} getInitials={getInitials} />
 
-            {/* 2. Quick Post Composer Widget - 46px+ Touch Target Action Buttons */}
+            {/* 2. Quick Post Composer Widget */}
             <div className="glass-card p-4 sm:p-5 border rounded-2xl shadow-md space-y-4" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
                 <div className="flex items-center gap-3.5">
                     <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full overflow-hidden border border-blue-500/40 p-0.5 flex-shrink-0">
@@ -219,32 +219,32 @@ export function CenterFeed({ user }: CenterFeedProps) {
                 </div>
             </div>
 
-            {/* 5. Compact Feed Switcher Widget */}
-            <div className="flex justify-center my-2">
-                <div className="inline-flex items-center gap-1.5 p-1 border rounded-full shadow-md" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+            {/* 5. Compact Feed Switcher Widget - Enlarged Touch Target & Font Size */}
+            <div className="flex justify-center my-3">
+                <div className="inline-flex items-center gap-2 p-1.5 border rounded-full shadow-md" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
                     <button
                         onClick={() => setFeedType("global")}
-                        className={`py-2 px-5 rounded-full text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                        className={`py-2.5 px-6 rounded-full text-sm font-bold transition-all flex items-center gap-2 cursor-pointer min-h-[44px] ${
                             feedType === "global"
                                 ? "bg-blue-500 text-white shadow-sm"
                                 : ""
                         }`}
                         style={{ color: feedType === "global" ? "#ffffff" : "var(--text-light)" }}
                     >
-                        <Compass className="w-4 h-4" />
+                        <Compass className="w-4.5 h-4.5" />
                         <span>Explore Feed</span>
                     </button>
 
                     <button
                         onClick={() => setFeedType("following")}
-                        className={`py-2 px-5 rounded-full text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                        className={`py-2.5 px-6 rounded-full text-sm font-bold transition-all flex items-center gap-2 cursor-pointer min-h-[44px] ${
                             feedType === "following"
                                 ? "bg-blue-500 text-white shadow-sm"
                                 : ""
                         }`}
                         style={{ color: feedType === "following" ? "#ffffff" : "var(--text-light)" }}
                     >
-                        <Users className="w-4 h-4" />
+                        <Users className="w-4.5 h-4.5" />
                         <span>Following</span>
                     </button>
                 </div>
