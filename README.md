@@ -14,6 +14,7 @@
 [![Firebase](https://img.shields.io/badge/Firebase-Auth_%26_Store-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Polyglot_Data-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![Framer Motion](https://img.shields.io/badge/Framer_Motion-Smooth_UI-black?style=for-the-badge&logo=framer&logoColor=white)](https://www.framer.com/motion/)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-egram--project.vercel.app-8B5CF6?style=for-the-badge&logo=vercel&logoColor=white)](https://egram-project.vercel.app/)
 
 <br/>
 
