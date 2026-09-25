@@ -65,13 +65,15 @@ export default function Home() {
             />
 
             <main className="main-content">
-              <CenterFeed user={user} />
+              <div className="dashboard-layout">
+                <CenterFeed user={user} />
 
-              <RightSidebar
-                user={user}
-                handleSignOut={handleSignOut}
-                getInitials={getInitials}
-              />
+                <RightSidebar
+                  user={user}
+                  handleSignOut={handleSignOut}
+                  getInitials={getInitials}
+                />
+              </div>
             </main>
 
             <MobileNav

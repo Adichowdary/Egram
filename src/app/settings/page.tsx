@@ -240,7 +240,7 @@ export default function SettingsPage() {
                     />
 
                     <main className="main-content">
-                        <div className="feed-column max-w-[760px] w-full space-y-6">
+                        <div className="max-w-5xl mx-auto w-full space-y-8">
 
                             {/* Header Section */}
                             <motion.div

@@ -105,30 +105,32 @@ export default function SearchPage() {
                     />
 
                     <main className="main-content">
-                        <div className="feed-column space-y-5">
-                            {/* 1. Header & Search Input (Placeholder Removed) */}
-                            <div className="glass-card p-5 sm:p-6 border border-[var(--border)] rounded-2xl shadow-sm space-y-4" style={{ backgroundColor: "var(--surface)" }}>
-                                <div className="flex items-center gap-2.5">
-                                    <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                                        <Search className="w-5 h-5" />
+                        <div className="dashboard-layout">
+                            <div className="feed-column space-y-6">
+                                {/* 1. Header & Search Input */}
+                                <div className="glass-card p-5 sm:p-6 border border-[var(--border)] rounded-2xl shadow-sm space-y-4" style={{ backgroundColor: "var(--surface)" }}>
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                            <Search className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[var(--text-dark)]">Search Egram</h1>
+                                            <p className="text-xs text-[var(--muted)] font-medium">Find students, study topics, and live study rooms</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[var(--text-dark)]">Search Egram</h1>
-                                        <p className="text-xs text-[var(--muted)] font-medium">Find students, study topics, and live study rooms</p>
+                                    
+                                    <div className="relative flex items-center">
+                                        <Search className="w-5 h-5 absolute left-4 text-[var(--muted)] pointer-events-none z-10" />
+                                        <input
+                                            type="text"
+                                            value={query}
+                                            onChange={(e) => setQuery(e.target.value)}
+                                            placeholder="Search students, topics, or rooms…"
+                                            aria-label="Search students, topics, or rooms"
+                                            className="w-full border border-[var(--border)] rounded-2xl pl-12 pr-4 py-3.5 text-sm sm:text-base font-medium outline-none transition-all min-h-[48px] focus:border-indigo-500/50"
+                                            style={{ backgroundColor: "var(--surface-2)", color: "var(--text-dark)" }}
+                                        />
                                     </div>
-                                </div>
-                                
-                                <div className="relative flex items-center">
-                                    <Search className="w-5 h-5 absolute left-4 text-[var(--muted)] pointer-events-none z-10" />
-                                    <input
-                                        type="text"
-                                        value={query}
-                                        onChange={(e) => setQuery(e.target.value)}
-                                        placeholder=""
-                                        className="w-full border border-[var(--border)] rounded-2xl pl-12 pr-4 py-3.5 text-sm sm:text-base font-medium outline-none transition-all min-h-[48px] focus:border-indigo-500/50"
-                                        style={{ backgroundColor: "var(--surface-2)", color: "var(--text-dark)" }}
-                                    />
-                                </div>
 
                                 {/* Filter Tabs */}
                                 <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1">
@@ -306,11 +308,12 @@ export default function SearchPage() {
                             </div>
                         </div>
 
-                        <RightSidebar
-                            user={user}
-                            handleSignOut={() => auth.signOut().then(() => router.push("/login"))}
-                            getInitials={getInitials}
-                        />
+                            <RightSidebar
+                                user={user}
+                                handleSignOut={() => auth.signOut().then(() => router.push("/login"))}
+                                getInitials={getInitials}
+                            />
+                        </div>
                     </main>
 
                     <MobileNav

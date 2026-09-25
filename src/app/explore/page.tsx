@@ -43,7 +43,7 @@ export default function ExplorePage() {
     if (!user) return null;
 
     return (
-        <div className="app-container">
+        <div className="min-h-screen">
             <Sidebar 
                 user={user} 
                 setIsModalOpen={setIsModalOpen} 
@@ -52,7 +52,7 @@ export default function ExplorePage() {
             />
 
             <main className="main-content">
-                <div className="max-w-6xl mx-auto p-6 space-y-8">
+                <div className="max-w-6xl mx-auto space-y-8">
                     {/* Header Section */}
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 overflow-hidden">
                         <div>
@@ -67,7 +67,8 @@ export default function ExplorePage() {
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-light)] group-focus-within:text-[var(--primary)] transition-colors pointer-events-none z-10 opacity-60" />
                             <input
                                 type="text"
-                                placeholder=""
+                                placeholder="Search study rooms…"
+                                aria-label="Search study rooms"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl pl-10 pr-4 py-2.5 w-full md:w-80 text-xs sm:text-sm text-[var(--text-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all font-medium placeholder:text-[var(--text-light)] placeholder:opacity-60 placeholder:font-normal truncate"

@@ -85,7 +85,8 @@ export default function DiscoverPage() {
                     />
 
                     <main className="main-content">
-                        <div className="feed-column space-y-5">
+                        <div className="dashboard-layout">
+                            <div className="feed-column space-y-6">
                             {/* 1. Discover Hub Header */}
                             <div className="glass-card p-5 sm:p-6 border border-[var(--border)] rounded-2xl shadow-sm space-y-2" style={{ backgroundColor: "var(--surface)" }}>
                                 <div className="flex items-center gap-3">
@@ -249,11 +250,12 @@ export default function DiscoverPage() {
                             </div>
                         </div>
 
-                        <RightSidebar
-                            user={user}
-                            handleSignOut={() => auth.signOut().then(() => router.push("/login"))}
-                            getInitials={getInitials}
-                        />
+                            <RightSidebar
+                                user={user}
+                                handleSignOut={() => auth.signOut().then(() => router.push("/login"))}
+                                getInitials={getInitials}
+                            />
+                        </div>
                     </main>
 
                     <MobileNav

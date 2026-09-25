@@ -114,7 +114,8 @@ export default function CirclesPage() {
                     />
 
                     <main className="main-content">
-                        <div className="feed-column space-y-5">
+                        <div className="dashboard-layout">
+                            <div className="feed-column space-y-6">
                             
                             {/* Page Header */}
                             <div className="glass-card p-5 border border-[var(--border)] rounded-2xl shadow-sm space-y-2" style={{ backgroundColor: "var(--surface)" }}>
@@ -221,11 +222,12 @@ export default function CirclesPage() {
 
                         </div>
 
-                        <RightSidebar
-                            user={user}
-                            handleSignOut={() => auth.signOut().then(() => router.push("/login"))}
-                            getInitials={getInitials}
-                        />
+                            <RightSidebar
+                                user={user}
+                                handleSignOut={() => auth.signOut().then(() => router.push("/login"))}
+                                getInitials={getInitials}
+                            />
+                        </div>
                     </main>
 
                     <MobileNav

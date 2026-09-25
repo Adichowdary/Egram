@@ -84,7 +84,7 @@ export function StoriesBar({ currentUser, getInitials }: StoriesBarProps) {
                         onClick={() => setIsCreateStoryOpen(true)}
                         className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group active:scale-95 transition-all"
                     >
-                        <div className="relative w-15 h-15 sm:w-16 sm:h-16 rounded-full p-[2px] bg-gradient-to-tr from-indigo-500 via-purple-500 to-indigo-600 transition-transform group-hover:scale-105 shadow-md">
+                        <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full p-[2px] bg-gradient-to-tr from-indigo-500 via-purple-500 to-indigo-600 transition-transform group-hover:scale-105 shadow-md">
                             <div className="w-full h-full rounded-full bg-[var(--background)] p-0.5 overflow-hidden flex items-center justify-center">
                                 {myAvatar || currentUser?.photoURL ? (
                                     <img src={myAvatar || currentUser.photoURL || ""} alt="Avatar" className="w-full h-full rounded-full object-cover" />
@@ -103,7 +103,7 @@ export function StoriesBar({ currentUser, getInitials }: StoriesBarProps) {
                     {loading ? (
                         [1, 2, 3, 4].map(i => (
                             <div key={i} className="flex flex-col items-center gap-1.5 flex-shrink-0">
-                                <div className="w-15 h-15 sm:w-16 sm:h-16 rounded-full skeleton-shimmer bg-[var(--surface-2)]" />
+                                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full skeleton-shimmer bg-[var(--surface-2)]" />
                                 <div className="w-10 h-2.5 rounded skeleton-shimmer bg-[var(--surface-2)]" />
                             </div>
                         ))
@@ -114,7 +114,7 @@ export function StoriesBar({ currentUser, getInitials }: StoriesBarProps) {
                                 onClick={() => setActiveStoryIndex(idx)}
                                 className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group active:scale-95 transition-all"
                             >
-                                <div className={`relative w-15 h-15 sm:w-16 sm:h-16 rounded-full p-[2px] transition-transform group-hover:scale-105 shadow-md ${
+                                <div className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-full p-[2px] transition-transform group-hover:scale-105 shadow-md ${
                                     storyUser.hasUnseen
                                         ? "bg-gradient-to-tr from-indigo-500 via-purple-500 to-amber-500"
                                         : "bg-[var(--border)]"

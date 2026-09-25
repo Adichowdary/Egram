@@ -115,7 +115,8 @@ export default function StudyPage() {
                     />
 
                     <main className="main-content">
-                        <div className="feed-column space-y-6">
+                        <div className="dashboard-layout">
+                            <div className="feed-column space-y-6">
                             
                             {/* Page Title */}
                             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
@@ -224,11 +225,12 @@ export default function StudyPage() {
 
                         </div>
 
-                        <RightSidebar
-                            user={user}
-                            handleSignOut={() => auth.signOut().then(() => router.push("/login"))}
-                            getInitials={getInitials}
-                        />
+                            <RightSidebar
+                                user={user}
+                                handleSignOut={() => auth.signOut().then(() => router.push("/login"))}
+                                getInitials={getInitials}
+                            />
+                        </div>
                     </main>
 
                     <MobileNav

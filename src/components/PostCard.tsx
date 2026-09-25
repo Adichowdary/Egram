@@ -463,9 +463,11 @@ export function PostCard({ post: initialPost, user, getInitials, onDelete }: Pos
                         <form onSubmit={handleAddComment} className="flex items-center gap-3 px-4 py-3.5 border-t min-h-[60px]" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
                             <input
                                 type="text"
+                                name="comment"
+                                aria-label="Add a comment"
                                 value={newComment}
                                 onChange={(e) => setNewComment(e.target.value)}
-                                placeholder="Write a comment..."
+                                placeholder="Add a comment..."
                                 className="flex-1 bg-transparent border-none text-sm sm:text-base font-medium outline-none"
                                 style={{ color: "var(--text-dark)" }}
                             />

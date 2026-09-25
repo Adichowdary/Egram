@@ -364,7 +364,7 @@ export default function UserProfilePage() {
             </AnimatePresence>
 
             {!loading && user && (
-                <main className="min-h-screen">
+                <div className="min-h-screen">
                     <Sidebar
                         user={user}
                         setIsModalOpen={setIsModalOpen}
@@ -372,13 +372,15 @@ export default function UserProfilePage() {
                         getInitials={getInitials}
                     />
 
-                    <div className="main-content flex-col items-center pb-24 md:pb-8">
-                        {/* Profile Header */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="w-full max-w-[470px] glass rounded-3xl p-5 sm:p-8 mb-8 mt-4 md:mt-0 shadow-2xl shadow-black/20"
-                        >
+                    <main className="main-content">
+                        <div className="dashboard-layout">
+                            <div className="feed-column space-y-6">
+                                {/* Profile Header */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="w-full glass rounded-3xl p-6 sm:p-8 shadow-xl border border-[var(--border)]"
+                                >
                             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-8">
                                 <div
                                     className={`w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-tr from-purple-600 via-pink-500 to-orange-400 p-1 relative flex-shrink-0 ${isOwnProfile ? 'cursor-pointer group' : ''}`}
@@ -563,7 +565,7 @@ export default function UserProfilePage() {
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.1 }}
-                            className="w-full max-w-[470px] relative overflow-hidden rounded-[32px] mb-12 min-h-[170px] sm:min-h-[190px] group border-4 border-[var(--card-border)] shadow-xl flex flex-col justify-end"
+                            className="w-full relative overflow-hidden rounded-[32px] mb-12 min-h-[170px] sm:min-h-[190px] group border-4 border-[var(--card-border)] shadow-xl flex flex-col justify-end"
                         >
                             <img
                                 src="/streak-hero.png"
@@ -607,7 +609,7 @@ export default function UserProfilePage() {
                         </motion.div>
 
                         {/* Certificates Grid */}
-                        <div className="w-full max-w-[470px] space-y-4 mb-8">
+                        <div className="w-full space-y-4 mb-8">
                             <div className="flex items-center justify-between">
                                 <h2 className="section-title !mb-0 text-sm opacity-60 uppercase tracking-widest text-[var(--text-light)]">Achievements</h2>
                                 {isOwnProfile && (
@@ -640,7 +642,7 @@ export default function UserProfilePage() {
                         </div>
 
                         {/* Posts Feed */}
-                        <div className="w-full max-w-[470px] space-y-6">
+                        <div className="w-full space-y-6">
                             <h2 className="section-title text-sm opacity-60 uppercase tracking-widest text-[var(--text-light)]">Learning Posts</h2>
                             {posts.length === 0 ? (
                                 <div className="text-center py-10 bg-[var(--accent-bg)] rounded-2xl border border-dashed border-[var(--card-border)]">
@@ -659,6 +661,8 @@ export default function UserProfilePage() {
                         handleSignOut={handleSignOut}
                         getInitials={getInitials}
                     />
+                </div>
+            </main>
 
                     {isOwnProfile && (
                         <>
@@ -702,7 +706,7 @@ export default function UserProfilePage() {
                         initialTab={followListTab}
                         onFollowChange={() => fetchProfileAndPosts()}
                     />
-                </main>
+                </div>
             )}
         </>
     );

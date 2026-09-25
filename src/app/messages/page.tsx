@@ -622,7 +622,7 @@ export default function MessagesPage() {
     const activeChatId = selectedGroup ? selectedGroup._id : (selectedUser ? selectedUser.firebaseUid : null);
 
     return (
-        <div className="app-container">
+        <div className="min-h-screen">
             <Sidebar
                 user={user}
                 setIsModalOpen={setIsModalOpen}
