@@ -172,7 +172,7 @@ export default function StudyPage() {
                                             type="text"
                                             value={topic}
                                             onChange={(e) => setTopic(e.target.value)}
-                                            placeholder="E.g., Computer Science, Calculus, or Design"
+                                            placeholder=""
                                             className="w-full bg-[var(--accent-bg)] border border-[var(--card-border)] text-center text-xs font-bold text-[var(--text-dark)] py-2 px-4 rounded-xl outline-none focus:border-indigo-500 transition-all placeholder:text-[var(--text-light)]"
                                         />
                                     </div>

@@ -49,8 +49,8 @@ export default function CirclesPage() {
                         const realGroups = (data.groups || []).map((g: any) => ({
                             id: g._id || g.id,
                             name: g.name,
-                            description: g.description || "Student community & discussion group",
-                            category: g.category || "General",
+                            description: g.description || "Student community & discussion circle",
+                            category: g.category || "Computer Science",
                             icon: "🎓",
                             membersCount: g.members?.length || 1,
                             isJoined: g.members?.includes(currentUser.uid) || false
@@ -114,45 +114,45 @@ export default function CirclesPage() {
                     />
 
                     <main className="main-content">
-                        <div className="feed-column space-y-6">
+                        <div className="feed-column space-y-5">
                             
                             {/* Page Header */}
-                            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+                            <div className="glass-card p-5 border border-[var(--border)] rounded-2xl shadow-sm space-y-2" style={{ backgroundColor: "var(--surface)" }}>
                                 <div className="flex items-center gap-3">
-                                    <div className="p-3 rounded-2xl bg-pink-500/10 text-pink-500 border border-pink-500/20">
+                                    <div className="p-3 rounded-2xl bg-pink-500/10 text-pink-400 border border-pink-500/20">
                                         <Users className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <h1 className="text-2xl font-black tracking-tight">Student Circles</h1>
-                                        <p className="text-xs text-[var(--text-light)] font-medium">
+                                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[var(--text-dark)]">Student Circles</h1>
+                                        <p className="text-xs sm:text-sm text-[var(--muted)] font-medium">
                                             Join subject communities, study groups, and project hubs
                                         </p>
                                     </div>
                                 </div>
-                            </motion.div>
+                            </div>
 
                             {/* Search & Category Pills */}
                             <div className="space-y-3">
                                 <div className="relative">
-                                    <Search className="w-4 h-4 text-[var(--text-light)] absolute left-4 top-1/2 -translate-y-1/2" />
+                                    <Search className="w-4 h-4 text-[var(--muted)] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                                     <input
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         placeholder=""
-                                        className="w-full bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl pl-11 pr-4 py-3 text-xs sm:text-sm text-[var(--text-dark)] placeholder:text-[var(--text-light)] focus:outline-none focus:border-indigo-500 transition-all shadow-xs"
+                                        className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-2xl pl-11 pr-4 py-3 text-xs sm:text-sm text-[var(--text-dark)] placeholder:text-[var(--muted)] focus:outline-none focus:border-indigo-500/50 transition-all shadow-xs"
                                     />
                                 </div>
 
-                                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+                                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
                                     {categories.map((cat) => (
                                         <button
                                             key={cat}
                                             onClick={() => setActiveCategory(cat)}
-                                            className={`py-2 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                                            className={`py-2 px-4 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
                                                 activeCategory === cat
-                                                    ? "bg-indigo-500 text-white shadow-md"
-                                                    : "bg-[var(--card-bg)] border border-[var(--card-border)] text-[var(--text-light)] hover:text-[var(--text-dark)]"
+                                                    ? "bg-indigo-600 text-white shadow-sm"
+                                                    : "bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text-dark)]"
                                             }`}
                                         >
                                             {cat}
@@ -161,32 +161,33 @@ export default function CirclesPage() {
                                 </div>
                             </div>
 
-                            {/* Circles Grid */}
-                            <div className="space-y-4">
+                            {/* Circles Cards */}
+                            <div className="space-y-3">
                                 {filteredCircles.length === 0 ? (
-                                    <div className="glass-card p-8 text-center border border-dashed border-[var(--card-border)] rounded-3xl space-y-2">
-                                        <Sparkles className="w-8 h-8 text-indigo-500 mx-auto opacity-60" />
-                                        <p className="text-sm font-black text-[var(--text-dark)]">No circles found</p>
-                                        <p className="text-xs text-[var(--text-light)]">Try searching with a different term or category!</p>
+                                    <div className="glass-card p-8 text-center border border-dashed border-[var(--border)] rounded-2xl space-y-2" style={{ backgroundColor: "var(--surface)" }}>
+                                        <Sparkles className="w-7 h-7 text-indigo-400 mx-auto opacity-70" />
+                                        <p className="text-sm font-extrabold text-[var(--text-dark)]">No circles found</p>
+                                        <p className="text-xs text-[var(--muted)]">Try searching with a different keyword or category tab!</p>
                                     </div>
                                 ) : (
                                     filteredCircles.map((circle) => (
                                         <motion.div
                                             key={circle.id}
-                                            whileHover={{ y: -2 }}
-                                            className="glass-card p-5 border border-[var(--card-border)] rounded-3xl transition-all shadow-sm hover:shadow-md flex items-center justify-between gap-4"
+                                            whileHover={{ y: -1 }}
+                                            className="glass-card p-4 border border-[var(--border)] rounded-2xl transition-all shadow-sm flex items-center justify-between gap-4"
+                                            style={{ backgroundColor: "var(--surface)" }}
                                         >
-                                            <div className="flex items-start gap-3.5 min-w-0">
-                                                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 flex items-center justify-center font-black text-xl flex-shrink-0">
+                                            <div className="flex items-center gap-3.5 min-w-0">
+                                                <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center font-black text-lg flex-shrink-0">
                                                     {circle.icon}
                                                 </div>
 
                                                 <div className="flex flex-col min-w-0">
                                                     <h3 className="text-sm font-extrabold text-[var(--text-dark)] truncate">{circle.name}</h3>
-                                                    <p className="text-xs text-[var(--text-light)] line-clamp-1 mt-0.5">{circle.description}</p>
+                                                    <p className="text-xs text-[var(--muted)] line-clamp-1 mt-0.5">{circle.description}</p>
                                                     
-                                                    <div className="flex items-center gap-2 mt-2 text-[11px] text-[var(--text-light)] font-bold">
-                                                        <span className="px-2 py-0.5 rounded-full bg-[var(--accent-bg)] border border-[var(--card-border)]">{circle.category}</span>
+                                                    <div className="flex items-center gap-2 mt-1.5 text-[11px] text-[var(--muted)] font-semibold">
+                                                        <span className="px-2 py-0.5 rounded-full bg-[var(--surface-2)] border border-[var(--border)]">{circle.category}</span>
                                                         <span>•</span>
                                                         <span>{circle.membersCount} members</span>
                                                     </div>
@@ -195,15 +196,15 @@ export default function CirclesPage() {
 
                                             <button
                                                 onClick={() => toggleJoinCircle(circle.id)}
-                                                className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+                                                className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer min-h-[38px] ${
                                                     circle.isJoined
-                                                        ? "bg-[var(--accent-bg)] border border-[var(--card-border)] text-[var(--text-dark)]"
-                                                        : "bg-indigo-500 text-white shadow-md hover:bg-indigo-600"
+                                                        ? "bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text-dark)] hover:border-indigo-500/30"
+                                                        : "bg-indigo-600 text-white shadow-sm hover:bg-indigo-500"
                                                 }`}
                                             >
                                                 {circle.isJoined ? (
                                                     <>
-                                                        <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
                                                         <span>Joined</span>
                                                     </>
                                                 ) : (

@@ -3,12 +3,12 @@ import { User } from "firebase/auth";
 import { PostFeed } from "./PostFeed";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { motion } from "framer-motion";
 import Link from "next/link";
 import { StoriesBar } from "./StoriesBar";
 import { Flame, Compass, Users, Image as ImageIcon, Video, Sparkles, TrendingUp } from "lucide-react";
 import { CreatePostModal } from "./CreatePostModal";
 import { CreateMeetModal } from "./CreateMeetModal";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 interface CenterFeedProps {
     user: User;
@@ -21,6 +21,8 @@ export function CenterFeed({ user }: CenterFeedProps) {
     const [loadingStreak, setLoadingStreak] = useState(true);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
     const [isMeetModalOpen, setIsMeetModalOpen] = useState(false);
+
+    const { userPhoto, userName } = useUserProfile(user);
 
     const trendingTags = ["#MachineLearning", "#WebDev", "#SystemDesign", "#Calculus", "#CyberSecurity"];
 
@@ -71,78 +73,78 @@ export function CenterFeed({ user }: CenterFeedProps) {
     };
 
     return (
-        <div className="feed-column space-y-6">
+        <div className="feed-column space-y-5">
             {/* 1. 24h Stories Bar Widget */}
             <StoriesBar currentUser={user} getInitials={getInitials} />
 
             {/* 2. Quick Post Composer Widget */}
-            <div className="glass-card p-4 sm:p-5 border rounded-2xl shadow-md space-y-4" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
-                <div className="flex items-center gap-3.5">
-                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full overflow-hidden border border-blue-500/40 p-0.5 flex-shrink-0">
-                        {user.photoURL ? (
-                            <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover rounded-full" />
+            <div className="glass-card p-4 sm:p-5 border border-[var(--border)] rounded-2xl shadow-sm space-y-3.5" style={{ backgroundColor: "var(--surface)" }}>
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden border border-indigo-500/30 p-0.5 flex-shrink-0">
+                        {userPhoto ? (
+                            <img src={userPhoto} alt="Avatar" className="w-full h-full object-cover rounded-full" />
                         ) : (
-                            <div className="w-full h-full bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center font-bold text-sm">
-                                {getInitials(user.displayName || user.email)}
+                            <div className="w-full h-full bg-indigo-500/10 text-indigo-400 rounded-full flex items-center justify-center font-bold text-xs">
+                                {getInitials(userName)}
                             </div>
                         )}
                     </div>
 
                     <button
                         onClick={() => setIsPostModalOpen(true)}
-                        className="flex-1 border text-left px-4.5 py-3.5 rounded-full text-xs sm:text-sm font-medium transition-all cursor-pointer truncate min-h-[46px]"
-                        style={{ backgroundColor: "var(--accent-bg)", borderColor: "var(--card-border)", color: "var(--text-light)" }}
+                        className="flex-1 border border-[var(--border)] text-left px-4 py-3 rounded-full text-xs sm:text-sm font-medium transition-all cursor-pointer truncate min-h-[44px] hover:border-indigo-500/30"
+                        style={{ backgroundColor: "var(--surface-2)", color: "var(--muted)" }}
                     >
-                        Share a study update, code snippet, or thought...
+                        What's on your mind? Share an update or snippet...
                     </button>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2.5 pt-3 border-t text-xs font-bold" style={{ borderColor: "var(--card-border)", color: "var(--text-light)" }}>
+                <div className="grid grid-cols-3 gap-2 pt-2.5 border-t border-[var(--border)] text-xs font-bold" style={{ color: "var(--muted)" }}>
                     <button
                         onClick={() => setIsPostModalOpen(true)}
-                        className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border transition-all cursor-pointer truncate min-h-[46px]"
-                        style={{ backgroundColor: "var(--accent-bg)", borderColor: "var(--card-border)" }}
+                        className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-[var(--border)] transition-all cursor-pointer truncate min-h-[42px] hover:border-indigo-500/30"
+                        style={{ backgroundColor: "var(--surface-2)" }}
                     >
-                        <ImageIcon className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                        <ImageIcon className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                         <span className="truncate">Add Media</span>
                     </button>
 
                     <button
                         onClick={() => setIsMeetModalOpen(true)}
-                        className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border transition-all cursor-pointer truncate min-h-[46px]"
-                        style={{ backgroundColor: "var(--accent-bg)", borderColor: "var(--card-border)" }}
+                        className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-[var(--border)] transition-all cursor-pointer truncate min-h-[42px] hover:border-indigo-500/30"
+                        style={{ backgroundColor: "var(--surface-2)" }}
                     >
-                        <Video className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                        <Video className="w-4 h-4 text-indigo-400 flex-shrink-0" />
                         <span className="truncate">Study Room</span>
                     </button>
 
                     <button
                         onClick={() => setIsPostModalOpen(true)}
-                        className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-blue-500 text-white hover:bg-blue-600 shadow-md transition-all cursor-pointer truncate min-h-[46px]"
+                        className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-all cursor-pointer truncate min-h-[42px]"
                     >
-                        <Sparkles className="w-5 h-5 flex-shrink-0" />
-                        <span className="truncate">Publish</span>
+                        <Sparkles className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">Post</span>
                     </button>
                 </div>
             </div>
 
-            {/* 3. Global Streak Leaderboard Widget - 90px Column Slot Sizing */}
-            <div className="glass-card p-4 sm:p-5 border rounded-2xl shadow-md space-y-3" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
-                <div className="flex items-center justify-between px-1">
+            {/* 3. Global Streak Leaderboard Widget */}
+            <div className="glass-card p-4 sm:p-5 border border-[var(--border)] rounded-2xl shadow-sm space-y-3" style={{ backgroundColor: "var(--surface)" }}>
+                <div className="flex items-center justify-between px-0.5">
                     <div className="flex items-center gap-2">
-                        <Flame className="w-5 h-5 text-amber-500 fill-amber-500 animate-pulse flex-shrink-0" />
-                        <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider" style={{ color: "var(--text-dark)" }}>Global Streak Hall of Fame</h3>
+                        <Flame className="w-4.5 h-4.5 text-amber-400 fill-amber-400/20 flex-shrink-0" />
+                        <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--text-dark)]">Streak Hall of Fame</h3>
                     </div>
-                    <span className="text-[10px] sm:text-xs font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full flex-shrink-0">
+                    <span className="text-[10px] sm:text-xs font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-0.5 rounded-full flex-shrink-0">
                         Top Streaks
                     </span>
                 </div>
 
                 <div className="overflow-x-auto no-scrollbar py-1">
-                    <div className="flex items-center gap-4 min-w-max px-1">
+                    <div className="flex items-center gap-3.5 min-w-max px-0.5">
                         {loadingStreak ? (
                             [1, 2, 3, 4, 5].map(i => (
-                                <div key={i} className="w-22 h-22 rounded-xl skeleton-shimmer" style={{ backgroundColor: "var(--accent-bg)" }} />
+                                <div key={i} className="w-20 h-20 rounded-xl skeleton-shimmer bg-[var(--surface-2)]" />
                             ))
                         ) : streakLeaderboard.length > 0 ? (
                             streakLeaderboard.slice(0, 10).map((item, index) => {
@@ -151,11 +153,11 @@ export function CenterFeed({ user }: CenterFeedProps) {
                                 const isOnline = onlineUids.has(item.firebaseUid);
                                 const streakVal = item.currentStreak || item.streak || 0;
 
-                                let borderGradient = "border-blue-500/40";
+                                let borderGradient = "border-[var(--border)]";
                                 let rankTag = null;
 
                                 if (rank === 1) {
-                                    borderGradient = "border-amber-500 shadow-amber-500/20";
+                                    borderGradient = "border-amber-400 shadow-amber-400/20";
                                     rankTag = "👑 #1";
                                 } else if (rank === 2) {
                                     borderGradient = "border-slate-400";
@@ -166,10 +168,10 @@ export function CenterFeed({ user }: CenterFeedProps) {
                                 }
 
                                 return (
-                                    <Link key={item.firebaseUid || index} href={`/profile/${item.firebaseUid}`} className="relative group flex flex-col items-center gap-1.5 min-w-[90px] max-w-[94px]">
+                                    <Link key={item.firebaseUid || index} href={`/profile/${item.firebaseUid}`} className="relative group flex flex-col items-center gap-1.5 min-w-[84px] max-w-[88px]">
                                         <div className="relative">
-                                            <div className={`w-14 h-14 rounded-full border-2 p-0.5 transition-all group-hover:scale-105 shadow-sm ${borderGradient}`}>
-                                                <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center font-bold text-xs" style={{ backgroundColor: "var(--accent-bg)", color: "var(--primary)" }}>
+                                            <div className={`w-13 h-13 rounded-full border-2 p-0.5 transition-all group-hover:scale-105 shadow-sm ${borderGradient}`}>
+                                                <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center font-bold text-xs bg-[var(--surface-2)] text-indigo-400">
                                                     {item.avatarUrl ? (
                                                         <img src={item.avatarUrl} alt={item.name} className="w-full h-full object-cover" />
                                                     ) : (
@@ -179,24 +181,24 @@ export function CenterFeed({ user }: CenterFeedProps) {
                                             </div>
 
                                             {isOnline && (
-                                                <div className="absolute top-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 rounded-full z-20" style={{ borderColor: "var(--card-bg)" }} />
+                                                <div className="absolute top-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[var(--surface)] rounded-full z-20" />
                                             )}
                                         </div>
 
                                         {/* Clean Streak Badge below avatar */}
-                                        <div className="px-2 py-0.5 rounded-full border text-[10px] font-bold text-amber-500 shadow-sm flex items-center gap-0.5" style={{ backgroundColor: "var(--accent-bg)", borderColor: "var(--card-border)" }}>
-                                            <span>{streakVal}d</span>
+                                        <div className="px-2 py-0.5 rounded-full border border-[var(--border)] bg-[var(--surface-2)] text-[10px] font-bold text-amber-400 shadow-xs flex items-center gap-0.5">
+                                            <span>🔥 {streakVal}d</span>
                                             {rankTag && <span className="ml-0.5">{rankTag}</span>}
                                         </div>
                                         
-                                        <span className="text-[11px] font-medium w-full text-center truncate px-0.5" style={{ color: "var(--text-dark)" }}>
+                                        <span className="text-[11px] font-medium w-full text-center truncate px-0.5 text-[var(--text-dark)]">
                                             {isSelf ? 'You' : (item.name || 'User')}
                                         </span>
                                     </Link>
                                 );
                             })
                         ) : (
-                            <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs" style={{ backgroundColor: "var(--accent-bg)", color: "var(--text-light)" }}>
+                            <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs bg-[var(--surface-2)] text-[var(--muted)]">
                                 <span>No active streak records yet</span>
                             </div>
                         )}
@@ -205,46 +207,48 @@ export function CenterFeed({ user }: CenterFeedProps) {
             </div>
 
             {/* 4. Trending Topics Bar Widget */}
-            <div className="glass-card p-4 border rounded-xl flex items-center justify-between gap-3 overflow-x-auto no-scrollbar" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+            <div className="glass-card p-3.5 sm:p-4 border border-[var(--border)] rounded-2xl flex items-center justify-between gap-3 overflow-x-auto no-scrollbar" style={{ backgroundColor: "var(--surface)" }}>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                    <TrendingUp className="w-5 h-5 text-blue-500" />
-                    <span className="text-xs font-bold uppercase" style={{ color: "var(--text-light)" }}>Trending Topics:</span>
+                    <TrendingUp className="w-4.5 h-4.5 text-indigo-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Trending Topics:</span>
                 </div>
                 <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
                     {trendingTags.map((tag) => (
-                        <Link key={tag} href={`/search?q=${encodeURIComponent(tag.replace('#', ''))}`} className="px-3 py-1.5 rounded-lg border text-xs font-bold text-blue-500 transition-all flex-shrink-0" style={{ backgroundColor: "var(--accent-bg)", borderColor: "var(--card-border)" }}>
+                        <Link 
+                            key={tag} 
+                            href={`/search?q=${encodeURIComponent(tag.replace('#', ''))}`} 
+                            className="px-3 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] text-xs font-bold text-indigo-400 hover:border-indigo-500/30 transition-all flex-shrink-0"
+                        >
                             {tag}
                         </Link>
                     ))}
                 </div>
             </div>
 
-            {/* 5. Compact Feed Switcher Widget - Enlarged Touch Target & Font Size */}
-            <div className="flex justify-center my-3">
-                <div className="inline-flex items-center gap-2 p-1.5 border rounded-full shadow-md" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+            {/* 5. Compact Feed Switcher Widget */}
+            <div className="flex justify-center my-2">
+                <div className="inline-flex items-center gap-1.5 p-1 border border-[var(--border)] rounded-full shadow-sm" style={{ backgroundColor: "var(--surface)" }}>
                     <button
                         onClick={() => setFeedType("global")}
-                        className={`py-2.5 px-6 rounded-full text-sm font-bold transition-all flex items-center gap-2 cursor-pointer min-h-[44px] ${
+                        className={`py-2 px-5 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer min-h-[40px] ${
                             feedType === "global"
-                                ? "bg-blue-500 text-white shadow-sm"
-                                : ""
+                                ? "bg-indigo-600 text-white shadow-sm"
+                                : "text-[var(--muted)] hover:text-[var(--text-dark)]"
                         }`}
-                        style={{ color: feedType === "global" ? "#ffffff" : "var(--text-light)" }}
                     >
-                        <Compass className="w-4.5 h-4.5" />
+                        <Compass className="w-4 h-4" />
                         <span>Explore Feed</span>
                     </button>
 
                     <button
                         onClick={() => setFeedType("following")}
-                        className={`py-2.5 px-6 rounded-full text-sm font-bold transition-all flex items-center gap-2 cursor-pointer min-h-[44px] ${
+                        className={`py-2 px-5 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer min-h-[40px] ${
                             feedType === "following"
-                                ? "bg-blue-500 text-white shadow-sm"
-                                : ""
+                                ? "bg-indigo-600 text-white shadow-sm"
+                                : "text-[var(--muted)] hover:text-[var(--text-dark)]"
                         }`}
-                        style={{ color: feedType === "following" ? "#ffffff" : "var(--text-light)" }}
                     >
-                        <Users className="w-4.5 h-4.5" />
+                        <Users className="w-4 h-4" />
                         <span>Following</span>
                     </button>
                 </div>

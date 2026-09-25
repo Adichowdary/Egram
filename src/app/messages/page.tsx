@@ -705,7 +705,7 @@ export default function MessagesPage() {
                                                 <h3 style={{ fontSize: "0.95rem", fontWeight: 600, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", color: blockedUsers.includes(contact.firebaseUid) ? 'var(--text-light)' : 'inherit' }}>
                                                     {contact.name} {blockedUsers.includes(contact.firebaseUid) && <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded ml-1 border border-red-500/30">Blocked</span>}
                                                 </h3>
-                                                <p className="text-xs text-zinc-500 truncate">{contact.email}</p>
+                                                <p className="text-xs text-zinc-400 truncate">{contact.bio || `@${contact.name?.toLowerCase().replace(/\s+/g, '')}`}</p>
                                             </div>
                                         </div>
                                     ))
